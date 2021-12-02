@@ -146,10 +146,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="include\expression.h" />
+    <ClInclude Include="include\pretty_printer.h" />
     <ClInclude Include="include\scanner.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\expression.cc" />
     <ClCompile Include="src\main.cc" />
+    <ClCompile Include="src\pretty_printer.cc" />
     <ClCompile Include="src\scanner.cc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

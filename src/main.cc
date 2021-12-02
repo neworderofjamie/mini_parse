@@ -3,6 +3,7 @@
 #include <regex>
 #include <string>
 
+#include "expression.h"
 #include "scanner.h"
 
 std::string test(
@@ -76,12 +77,17 @@ std::string removeOldStyleVar(const std::string &input) {
 }
 int main()
 {
+    using namespace Parser;
+
     const auto test2Fix = removeOldStyleVar(test2);
     try
     {
-        const auto tokens = Parser::Scanner::scanTokens(test2Fix);
+        //const auto tokens = Scanner::scanTokens(test2Fix);
+
+       
+
     }
-    catch(const Parser::Scanner::Error &s) {
+    catch(const Scanner::Error &s) {
         std::cerr << s.what() << std::endl;
     }
     catch(const std::exception &e) {
