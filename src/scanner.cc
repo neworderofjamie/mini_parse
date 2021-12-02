@@ -8,7 +8,8 @@
 // Standard C includes
 #include <cctype>
 
-using namespace Parser;
+using namespace Parser::Scanner;
+
 
 // ---------------------------------------------------------------------------
 // Anonymous namespace
@@ -64,7 +65,7 @@ void scanIntegerSuffix(Cursor &cursor)
     }
 }
 
-void scanNumber(Cursor &cursor, std::vector<Parser::Token> &tokens) 
+void scanNumber(Cursor &cursor, std::vector<Token> &tokens) 
 {
     // If this is a hexadecimal literal
     if(cursor.peek() == '0' && std::tolower(cursor.peekNext()) == 'x') {
@@ -93,7 +94,7 @@ void scanNumber(Cursor &cursor, std::vector<Parser::Token> &tokens)
         if(isFloat) {
             // Check there's an exponent as these are REQUIRED for floating point literals
             if(cursor.peek() != 'p') {
-                throw ScannerError(cursor.getLine(), "Hexadecimal floating point literal missing exponent.");
+                throw Error(cursor.getLine(), "Hexadecimal floating point literal missing exponent.");
             }
             else {
                 // Read p
@@ -142,7 +143,7 @@ void scanNumber(Cursor &cursor, std::vector<Parser::Token> &tokens)
     }
     // Otherwise, if this is an octal integer
     else if(cursor.peek() == '0' && isodigit(cursor.peekNext())){
-        throw ScannerErrorUnsupported(cursor.getLine(), "Octal literals unsupported.");
+        throw ErrorUnsupported(cursor.getLine(), "Octal literals unsupported.");
     }
     // Otherwise, if it's decimal
     else {
@@ -210,7 +211,7 @@ void scanNumber(Cursor &cursor, std::vector<Parser::Token> &tokens)
     }
 }
 
-void scanIdentifier(Cursor &cursor, std::vector<Parser::Token> &tokens)
+void scanIdentifier(Cursor &cursor, std::vector<Token> &tokens)
 {
     // Read subsequent alphanumeric characters and underscores
     while(std::isalnum(cursor.peek()) || cursor.peek() == '_') {
@@ -228,7 +229,7 @@ void scanIdentifier(Cursor &cursor, std::vector<Parser::Token> &tokens)
     }
 }
 
-void scanToken(Cursor &cursor, std::vector<Parser::Token> &tokens)
+void scanToken(Cursor &cursor, std::vector<Token> &tokens)
 {
     using namespace Parser;
 
@@ -290,16 +291,16 @@ void scanToken(Cursor &cursor, std::vector<Parser::Token> &tokens)
                 scanIdentifier(cursor, tokens);
             }
             else {
-                throw ScannerError(cursor.getLine(), "Unexpected character.");
+                throw Error(cursor.getLine(), "Unexpected character.");
             }
         }
     }
 }
 }
 // ---------------------------------------------------------------------------
-// Parser
+// Parser::Scanner
 // ---------------------------------------------------------------------------
-namespace Parser
+namespace Parser::Scanner
 {
 std::vector<Token> scanTokens(const std::string_view &source)
 {

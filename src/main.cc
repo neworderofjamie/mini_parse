@@ -79,9 +79,9 @@ int main()
     const auto test2Fix = removeOldStyleVar(test2);
     try
     {
-        const auto tokens = Parser::scanTokens(test2Fix);
+        const auto tokens = Parser::Scanner::scanTokens(test2Fix);
     }
-    catch(const Parser::ScannerError &s) {
+    catch(const Parser::Scanner::Error &s) {
         std::cerr << s.what() << std::endl;
     }
     catch(const std::exception &e) {

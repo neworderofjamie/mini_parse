@@ -10,16 +10,16 @@
 // Standard C includes
 #include <cstdint>
 
-// ---------------------------------------------------------------------------
-// Parser::Cursor
-// ---------------------------------------------------------------------------
-namespace Parser
+//---------------------------------------------------------------------------
+// Parser::Scanner::Cursor
+//---------------------------------------------------------------------------
+namespace Parser::Scanner
 {
 class Cursor
 {
 public:
     Cursor(std::string_view source)
-    :   m_Start(0), m_Current(0), m_Source(source), m_Line(1)
+        : m_Start(0), m_Current(0), m_Source(source), m_Line(1)
     {}
 
     // ---------------------------------------------------------------------------
@@ -30,7 +30,7 @@ public:
         return m_Source.at(m_Current - 1);
     }
 
-    bool match(char expected) 
+    bool match(char expected)
     {
         if(isAtEnd()) {
             return false;
@@ -132,29 +132,29 @@ struct Token
 };
 
 // ---------------------------------------------------------------------------
-// Parser::ScannerError
+// Parser::Scanner::Error
 // ---------------------------------------------------------------------------
-class ScannerError : public std::runtime_error
+class Error : public std::runtime_error
 {
 public:
-    ScannerError(size_t line, const std::string &message) 
-    :   line(line), std::runtime_error(message)
+    Error(size_t line, const std::string &message)
+        : line(line), std::runtime_error(message)
     {}
 
     const size_t line;
 };
 
 // ---------------------------------------------------------------------------
-// Parser::ScannerErrorUnsupported
+// Parser::Scanner::ScannerErrorUnsupported
 // ---------------------------------------------------------------------------
-class ScannerErrorUnsupported : public ScannerError
+class ErrorUnsupported : public Error
 {
 public:
-    ScannerErrorUnsupported(size_t line, const std::string &message) 
-    :   ScannerError(line, message)
+    ErrorUnsupported(size_t line, const std::string &message)
+        : Error(line, message)
     {}
 };
 
 std::vector<Token> scanTokens(const std::string_view &source);
 
-}
+}   // namespace Scanner
