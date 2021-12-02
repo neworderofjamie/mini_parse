@@ -108,10 +108,10 @@ struct Token
         LESS, LESS_EQUAL,
 
         // Literals   
-        INT_IDENTIFIER, EXT_IDENTIFIER, NUMBER,
+        IDENTIFIER, NUMBER,
 
         // Types
-        TYPE,
+        TYPE_SPECIFIER,
 
         // Keywords
         CONST, DO, ELSE, FALSE, FOR, IF, TRUE, WHILE,

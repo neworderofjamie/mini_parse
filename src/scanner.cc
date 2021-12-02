@@ -3,6 +3,7 @@
 // Standard C++ includes
 #include <charconv>
 #include <unordered_map>
+#include <unordered_set>
 
 // Standard C includes
 #include <cctype>
@@ -22,7 +23,18 @@ const std::unordered_map<std::string_view, Token::Type> keywords{
     {"for", Token::Type::FOR},
     {"if", Token::Type::IF},
     {"true", Token::Type::TRUE},
-    {"while", Token::Type::WHILE}};
+    {"while", Token::Type::WHILE},
+    // **TEMP** just map types to tokens here too
+    {"char", Token::Type::TYPE_SPECIFIER},
+    {"short", Token::Type::TYPE_SPECIFIER},
+    {"int", Token::Type::TYPE_SPECIFIER},
+    {"long", Token::Type::TYPE_SPECIFIER},
+    {"scalar", Token::Type::TYPE_SPECIFIER},
+    {"float", Token::Type::TYPE_SPECIFIER},
+    {"double", Token::Type::TYPE_SPECIFIER},
+    {"signed", Token::Type::TYPE_SPECIFIER},
+    {"unsigned", Token::Type::TYPE_SPECIFIER},
+    {"bool", Token::Type::TYPE_SPECIFIER}};
 
 bool isodigit(char c)
 {
@@ -211,9 +223,8 @@ void scanIdentifier(Cursor &cursor, std::vector<Parser::Token> &tokens)
         tokens.emplace_back(k->second, cursor);
     }
     // Otherwise, add identifier token
-    // **TODO** EXT_IDENTIFIER
     else {
-        tokens.emplace_back(Token::Type::INT_IDENTIFIER, cursor);
+        tokens.emplace_back(Token::Type::IDENTIFIER, cursor);
     }
 }
 
