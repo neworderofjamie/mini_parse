@@ -11,13 +11,12 @@
 #include "token.h"
 
 //---------------------------------------------------------------------------
-// Parser::Scanner::Cursor
+// MiniParse::Scanner::CharCursor
 //---------------------------------------------------------------------------
-namespace Parser::Scanner
+namespace MiniParse::Scanner
 {
-
 //---------------------------------------------------------------------------
-// Parser::Scanner::Error
+// MiniParse::Scanner::Error
 //---------------------------------------------------------------------------
 class Error : public std::runtime_error
 {
@@ -30,7 +29,7 @@ public:
 };
 
 //---------------------------------------------------------------------------
-// Parser::Scanner::ScannerErrorUnsupported
+// MiniParse::Scanner::ScannerErrorUnsupported
 //---------------------------------------------------------------------------
 class ErrorUnsupported : public Error
 {
@@ -40,6 +39,6 @@ public:
     {}
 };
 
-std::vector<Token> scanTokens(const std::string_view &source);
+std::vector<Token> scanSource(const std::string_view &source);
 
 }   // namespace Scanner

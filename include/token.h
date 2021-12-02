@@ -8,9 +8,9 @@
 #include <cstdint>
 
 //---------------------------------------------------------------------------
-// Parser::Token
+// MiniParse::Token
 //---------------------------------------------------------------------------
-namespace Parser
+namespace MiniParse
 {
 struct Token
 {
@@ -19,8 +19,8 @@ struct Token
     enum class Type
     {
         // Single-character tokens
-        LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
-        COMMA, DOT, MINUS, PLUS, SEMICOLON, SLASH, STAR,
+        LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE, COMMA,
+        DOT, MINUS, PERCENT, PLUS, SEMICOLON, SLASH, STAR, TILDA,
 
         // One or two character tokens
         NOT, NOT_EQUAL,

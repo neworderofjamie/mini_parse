@@ -8,9 +8,8 @@
 // Standard C includes
 #include <cctype>
 
-using namespace Parser;
-using namespace Parser::Scanner;
-
+using namespace MiniParse;
+using namespace MiniParse::Scanner;
 
 //---------------------------------------------------------------------------
 // Anonymous namespace
@@ -38,10 +37,14 @@ const std::unordered_map<std::string_view, Token::Type> keywords{
     {"unsigned", Token::Type::TYPE_SPECIFIER},
     {"bool", Token::Type::TYPE_SPECIFIER}};
 
-class Cursor
+//---------------------------------------------------------------------------
+// CharCursor
+//---------------------------------------------------------------------------
+//! Class encapsulated logic to navigate through source characters
+class CharCursor
 {
 public:
-    Cursor(std::string_view source)
+    CharCursor(std::string_view source)
         : m_Start(0), m_Current(0), m_Source(source), m_Line(1)
     {}
 
@@ -115,7 +118,7 @@ bool isodigit(char c)
 {
     return (c >= '0' && c <= '7');
 }
-
+//---------------------------------------------------------------------------
 template<typename T>
 T toCharsThrow(std::string_view input, std::chars_format format = std::chars_format::general)
 {
@@ -129,13 +132,13 @@ T toCharsThrow(std::string_view input, std::chars_format format = std::chars_for
     }
     return out;
 }
-
-void emplaceToken(std::vector<Token> &tokens, Token::Type type, const Cursor &cursor, Token::LiteralValue literalValue = Token::LiteralValue())
+//---------------------------------------------------------------------------
+void emplaceToken(std::vector<Token> &tokens, Token::Type type, const CharCursor &cursor, Token::LiteralValue literalValue = Token::LiteralValue())
 {
     tokens.emplace_back(type, cursor.getLexeme(), cursor.getLine(), literalValue);
 }
-
-void scanIntegerSuffix(Cursor &cursor)
+//---------------------------------------------------------------------------
+void scanIntegerSuffix(CharCursor &cursor)
 {
     // Read suffix
     // **TODO** complete
@@ -143,8 +146,8 @@ void scanIntegerSuffix(Cursor &cursor)
         cursor.advance();
     }
 }
-
-void scanNumber(Cursor &cursor, std::vector<Token> &tokens) 
+//---------------------------------------------------------------------------
+void scanNumber(CharCursor &cursor, std::vector<Token> &tokens) 
 {
     // If this is a hexadecimal literal
     if(cursor.peek() == '0' && std::tolower(cursor.peekNext()) == 'x') {
@@ -289,8 +292,8 @@ void scanNumber(Cursor &cursor, std::vector<Token> &tokens)
         }
     }
 }
-
-void scanIdentifier(Cursor &cursor, std::vector<Token> &tokens)
+//---------------------------------------------------------------------------
+void scanIdentifier(CharCursor &cursor, std::vector<Token> &tokens)
 {
     // Read subsequent alphanumeric characters and underscores
     while(std::isalnum(cursor.peek()) || cursor.peek() == '_') {
@@ -307,10 +310,10 @@ void scanIdentifier(Cursor &cursor, std::vector<Token> &tokens)
         emplaceToken(tokens, Token::Type::IDENTIFIER, cursor);
     }
 }
-
-void scanToken(Cursor &cursor, std::vector<Token> &tokens)
+//---------------------------------------------------------------------------
+void scanToken(CharCursor &cursor, std::vector<Token> &tokens)
 {
-    using namespace Parser;
+    using namespace MiniParse;
 
     char c = cursor.advance();
     switch(c) {
@@ -322,9 +325,11 @@ void scanToken(Cursor &cursor, std::vector<Token> &tokens)
         case ',': emplaceToken(tokens, Token::Type::COMMA, cursor); break;
         case '.': emplaceToken(tokens, Token::Type::DOT, cursor); break;
         case '-': emplaceToken(tokens, Token::Type::MINUS, cursor); break;
+        case '%': emplaceToken(tokens, Token::Type::PERCENT, cursor); break;
         case '+': emplaceToken(tokens, Token::Type::PLUS, cursor); break;
         case ';': emplaceToken(tokens, Token::Type::SEMICOLON, cursor); break;
         case '*': emplaceToken(tokens, Token::Type::STAR, cursor); break;
+        case '~': emplaceToken(tokens, Token::Type::TILDA, cursor); break;
 
         // Operators
         case '!': emplaceToken(tokens, cursor.match('=') ? Token::Type::NOT_EQUAL : Token::Type::NOT, cursor); break;
@@ -376,16 +381,17 @@ void scanToken(Cursor &cursor, std::vector<Token> &tokens)
     }
 }
 }
+
 //---------------------------------------------------------------------------
-// Parser::Scanner
+// MiniParse::Scanner
 //---------------------------------------------------------------------------
-namespace Parser::Scanner
+namespace MiniParse::Scanner
 {
-std::vector<Token> scanTokens(const std::string_view &source)
+std::vector<Token> scanSource(const std::string_view &source)
 {
     std::vector<Token> tokens;
 
-    Cursor cursor(source);
+    CharCursor cursor(source);
 
     // Current line
     size_t line = 1;
