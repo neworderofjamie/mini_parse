@@ -3,7 +3,8 @@
 // Standard C++ includes
 #include <memory>
 
-#include "scanner.h"
+// Mini-parse includes
+#include "token.h"
 
 // Forward declarations
 namespace Parser::Expression 
@@ -27,19 +28,19 @@ struct Base
 class Binary : public Base
 {
 public:
-    Binary(const Base *left, const Scanner::Token &op, const Base *right)
+    Binary(const Base *left, const Token &op, const Base *right)
     :  m_Left(left), m_Operator(op), m_Right(right)
     {}
 
     virtual void accept(Visitor &visitor) const override;
 
     const Base *getLeft() const { return m_Left.get(); }
-    const Scanner::Token &getOperator() const { return m_Operator; }
+    const Token &getOperator() const { return m_Operator; }
     const Base *getRight() const { return m_Right.get(); }
 
 private:
     const std::unique_ptr<const Base> m_Left;
-    const Scanner::Token &m_Operator;
+    const Token &m_Operator;
     const std::unique_ptr<const Base> m_Right;
 };
 
@@ -67,16 +68,16 @@ private:
 class Literal : public Base
 {
 public:
-    Literal(Scanner::Token::LiteralValue value)
+    Literal(Token::LiteralValue value)
     :  m_Value(value)
     {}
 
     virtual void accept(Visitor &visitor) const override;
 
-    Scanner::Token::LiteralValue getValue() const { return m_Value; }
+    Token::LiteralValue getValue() const { return m_Value; }
 
 private:
-    const Scanner::Token::LiteralValue m_Value;
+    const Token::LiteralValue m_Value;
 };
 
 //---------------------------------------------------------------------------
@@ -85,17 +86,17 @@ private:
 class Unary : public Base
 {
 public:
-    Unary(const Scanner::Token &op, const Base *right)
+    Unary(const Token &op, const Base *right)
     :  m_Operator(op), m_Right(right)
     {}
 
     virtual void accept(Visitor &visitor) const override;
 
-    const Scanner::Token &getOperator() const { return m_Operator; }
+    const Token &getOperator() const { return m_Operator; }
     const Base *getRight() const { return m_Right.get(); }
 
 private:
-    const Scanner::Token &m_Operator;
+    const Token &m_Operator;
     const std::unique_ptr<const Base> m_Right;
 };
 

@@ -8,6 +8,7 @@
 // Standard C includes
 #include <cctype>
 
+using namespace Parser;
 using namespace Parser::Scanner;
 
 
@@ -37,6 +38,79 @@ const std::unordered_map<std::string_view, Token::Type> keywords{
     {"unsigned", Token::Type::TYPE_SPECIFIER},
     {"bool", Token::Type::TYPE_SPECIFIER}};
 
+class Cursor
+{
+public:
+    Cursor(std::string_view source)
+        : m_Start(0), m_Current(0), m_Source(source), m_Line(1)
+    {}
+
+    //---------------------------------------------------------------------------
+    // Public API
+    //---------------------------------------------------------------------------
+    char advance() {
+        m_Current++;
+        return m_Source.at(m_Current - 1);
+    }
+
+    bool match(char expected)
+    {
+        if(isAtEnd()) {
+            return false;
+        }
+        if(m_Source.at(m_Current) != expected) {
+            return false;
+        }
+
+        m_Current++;
+        return true;
+    }
+
+    void resetLexeme()
+    {
+        m_Start = m_Current;
+    }
+
+    char peek() const
+    {
+        if(isAtEnd()) {
+            return '\0';
+        }
+        return m_Source.at(m_Current);
+    }
+
+    char peekNext() const
+    {
+        if((m_Current + 1) >= m_Source.length()) {
+            return '\0';
+        }
+        else {
+            return m_Source.at(m_Current + 1);
+        }
+    }
+
+    std::string_view getLexeme() const
+    {
+        return m_Source.substr(m_Start, m_Current - m_Start);
+    }
+
+    size_t getLine() const { return m_Line; }
+
+    bool isAtEnd() const { return m_Current >= m_Source.length(); }
+
+    void nextLine() { m_Line++; }
+
+private:
+    //---------------------------------------------------------------------------
+    // Members
+    //---------------------------------------------------------------------------
+    size_t m_Start;
+    size_t m_Current;
+    size_t m_Line;
+
+    const std::string_view m_Source;
+};
+
 bool isodigit(char c)
 {
     return (c >= '0' && c <= '7');
@@ -54,6 +128,11 @@ T toCharsThrow(std::string_view input, std::chars_format format = std::chars_for
         throw std::out_of_range("Unable to convert chars '" + std::string{input} + "'");
     }
     return out;
+}
+
+void emplaceToken(std::vector<Token> &tokens, Token::Type type, const Cursor &cursor, Token::LiteralValue literalValue = Token::LiteralValue())
+{
+    tokens.emplace_back(type, cursor.getLexeme(), cursor.getLine(), literalValue);
 }
 
 void scanIntegerSuffix(Cursor &cursor)
@@ -115,8 +194,8 @@ void scanNumber(Cursor &cursor, std::vector<Token> &tokens)
                 if(suffix == 'f') {
                     // Add single-precision token
                     // **NOTE** skip 0x prefix
-                    tokens.emplace_back(Token::Type::NUMBER, cursor,
-                                        toCharsThrow<float>(cursor.getLexeme().substr(2), std::chars_format::hex));
+                    emplaceToken(tokens, Token::Type::NUMBER, cursor,
+                                 toCharsThrow<float>(cursor.getLexeme().substr(2), std::chars_format::hex));
 
                     // Advance
                     // **NOTE** we do this AFTER parsing float as std::to_chars doesn't deal with suffixes
@@ -125,8 +204,8 @@ void scanNumber(Cursor &cursor, std::vector<Token> &tokens)
                 // Add double-precision token
                 // **NOTE** skip 0x prefix
                 else {
-                    tokens.emplace_back(Token::Type::NUMBER, cursor,
-                                        toCharsThrow<double>(cursor.getLexeme().substr(2), std::chars_format::hex));
+                    emplaceToken(tokens, Token::Type::NUMBER, cursor,
+                                 toCharsThrow<double>(cursor.getLexeme().substr(2), std::chars_format::hex));
                 }
             }
         }
@@ -137,8 +216,8 @@ void scanNumber(Cursor &cursor, std::vector<Token> &tokens)
             // Add integer token
             // **TODO** different types
             // **NOTE** skip 0x prefix
-            tokens.emplace_back(Token::Type::NUMBER, cursor,
-                                toCharsThrow<int64_t>(cursor.getLexeme().substr(2), std::chars_format::hex));
+            emplaceToken(tokens, Token::Type::NUMBER, cursor,
+                         toCharsThrow<int64_t>(cursor.getLexeme().substr(2), std::chars_format::hex));
         }
     }
     // Otherwise, if this is an octal integer
@@ -185,8 +264,8 @@ void scanNumber(Cursor &cursor, std::vector<Token> &tokens)
                 const char suffix = std::tolower(cursor.peek());
                 if(suffix == 'f') {
                     // Add single-precision token
-                    tokens.emplace_back(Token::Type::NUMBER, cursor,
-                                        toCharsThrow<float>(cursor.getLexeme()));
+                    emplaceToken(tokens, Token::Type::NUMBER, cursor,
+                                 toCharsThrow<float>(cursor.getLexeme()));
 
                     // Advance
                     // **NOTE** we do this AFTER parsing float as std::to_chars doesn't deal with suffixes
@@ -194,8 +273,8 @@ void scanNumber(Cursor &cursor, std::vector<Token> &tokens)
                 }
                 // Otherwise, add double-precision token
                 else {
-                    tokens.emplace_back(Token::Type::NUMBER, cursor,
-                                        toCharsThrow<double>(cursor.getLexeme()));
+                    emplaceToken(tokens, Token::Type::NUMBER, cursor,
+                                 toCharsThrow<double>(cursor.getLexeme()));
                 }
             }
         }
@@ -205,8 +284,8 @@ void scanNumber(Cursor &cursor, std::vector<Token> &tokens)
 
             // Add integer token
             // **TODO** different types
-            tokens.emplace_back(Token::Type::NUMBER, cursor,
-                                toCharsThrow<int64_t>(cursor.getLexeme()));
+            emplaceToken(tokens, Token::Type::NUMBER, cursor,
+                         toCharsThrow<int64_t>(cursor.getLexeme()));
         }
     }
 }
@@ -221,11 +300,11 @@ void scanIdentifier(Cursor &cursor, std::vector<Token> &tokens)
     // If identifier is a keyword, add appropriate token
     const auto k = keywords.find(cursor.getLexeme());
     if(k != keywords.cend()) {
-        tokens.emplace_back(k->second, cursor);
+        emplaceToken(tokens, k->second, cursor);
     }
     // Otherwise, add identifier token
     else {
-        tokens.emplace_back(Token::Type::IDENTIFIER, cursor);
+        emplaceToken(tokens, Token::Type::IDENTIFIER, cursor);
     }
 }
 
@@ -236,22 +315,22 @@ void scanToken(Cursor &cursor, std::vector<Token> &tokens)
     char c = cursor.advance();
     switch(c) {
         // Single character tokens
-        case '(': tokens.emplace_back(Token::Type::LEFT_PAREN, cursor); break;
-        case ')': tokens.emplace_back(Token::Type::RIGHT_PAREN, cursor); break;
-        case '{': tokens.emplace_back(Token::Type::LEFT_BRACE, cursor); break;
-        case '}': tokens.emplace_back(Token::Type::RIGHT_BRACE, cursor); break;
-        case ',': tokens.emplace_back(Token::Type::COMMA, cursor); break;
-        case '.': tokens.emplace_back(Token::Type::DOT, cursor); break;
-        case '-': tokens.emplace_back(Token::Type::MINUS, cursor); break;
-        case '+': tokens.emplace_back(Token::Type::PLUS, cursor); break;
-        case ';': tokens.emplace_back(Token::Type::SEMICOLON, cursor); break;
-        case '*': tokens.emplace_back(Token::Type::STAR, cursor); break;
+        case '(': emplaceToken(tokens, Token::Type::LEFT_PAREN, cursor); break;
+        case ')': emplaceToken(tokens, Token::Type::RIGHT_PAREN, cursor); break;
+        case '{': emplaceToken(tokens, Token::Type::LEFT_BRACE, cursor); break;
+        case '}': emplaceToken(tokens, Token::Type::RIGHT_BRACE, cursor); break;
+        case ',': emplaceToken(tokens, Token::Type::COMMA, cursor); break;
+        case '.': emplaceToken(tokens, Token::Type::DOT, cursor); break;
+        case '-': emplaceToken(tokens, Token::Type::MINUS, cursor); break;
+        case '+': emplaceToken(tokens, Token::Type::PLUS, cursor); break;
+        case ';': emplaceToken(tokens, Token::Type::SEMICOLON, cursor); break;
+        case '*': emplaceToken(tokens, Token::Type::STAR, cursor); break;
 
         // Operators
-        case '!': tokens.emplace_back(cursor.match('=') ? Token::Type::NOT_EQUAL : Token::Type::NOT, cursor); break;
-        case '=': tokens.emplace_back(cursor.match('=') ? Token::Type::EQUAL_EQUAL : Token::Type::EQUAL, cursor); break;
-        case '<': tokens.emplace_back(cursor.match('=') ? Token::Type::LESS_EQUAL : Token::Type::LESS, cursor); break;
-        case '>': tokens.emplace_back(cursor.match('=') ? Token::Type::GREATER_EQUAL : Token::Type::GREATER, cursor); break;
+        case '!': emplaceToken(tokens, cursor.match('=') ? Token::Type::NOT_EQUAL : Token::Type::NOT, cursor); break;
+        case '=': emplaceToken(tokens, cursor.match('=') ? Token::Type::EQUAL_EQUAL : Token::Type::EQUAL, cursor); break;
+        case '<': emplaceToken(tokens, cursor.match('=') ? Token::Type::LESS_EQUAL : Token::Type::LESS, cursor); break;
+        case '>': emplaceToken(tokens, cursor.match('=') ? Token::Type::GREATER_EQUAL : Token::Type::GREATER, cursor); break;
 
         case '/':
         {
@@ -262,7 +341,7 @@ void scanToken(Cursor &cursor, std::vector<Token> &tokens)
                 }
             }
             else {
-                tokens.emplace_back(Token::Type::SLASH, cursor);
+                emplaceToken(tokens, Token::Type::SLASH, cursor);
             }
             break;
         }
@@ -317,7 +396,7 @@ std::vector<Token> scanTokens(const std::string_view &source)
         scanToken(cursor, tokens);
     }
 
-    tokens.emplace_back(Token::Type::END_OF_FILE, cursor);
+    emplaceToken(tokens, Token::Type::END_OF_FILE, cursor);
     return tokens;
 }
 }

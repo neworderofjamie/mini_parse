@@ -149,6 +149,7 @@
     <ClInclude Include="include\expression.h" />
     <ClInclude Include="include\pretty_printer.h" />
     <ClInclude Include="include\scanner.h" />
+    <ClInclude Include="include\token.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\expression.cc" />
