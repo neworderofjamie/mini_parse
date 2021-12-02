@@ -28,7 +28,7 @@ struct Base
 class Binary : public Base
 {
 public:
-    Binary(const Base *left, const Token &op, const Base *right)
+    Binary(const Base *left, Token op, const Base *right)
     :  m_Left(left), m_Operator(op), m_Right(right)
     {}
 
@@ -40,7 +40,7 @@ public:
 
 private:
     const std::unique_ptr<const Base> m_Left;
-    const Token &m_Operator;
+    const Token m_Operator;
     const std::unique_ptr<const Base> m_Right;
 };
 
@@ -86,7 +86,7 @@ private:
 class Unary : public Base
 {
 public:
-    Unary(const Token &op, const Base *right)
+    Unary(Token op, const Base *right)
     :  m_Operator(op), m_Right(right)
     {}
 
@@ -96,7 +96,7 @@ public:
     const Base *getRight() const { return m_Right.get(); }
 
 private:
-    const Token &m_Operator;
+    const Token m_Operator;
     const std::unique_ptr<const Base> m_Right;
 };
 
