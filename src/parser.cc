@@ -52,12 +52,21 @@ public:
         return false;
     }
 
-    const Token &peek() const
+    Token advance()
+    {
+        if(!isAtEnd()) {
+            m_Current++;
+        }
+
+        return previous();
+    }
+
+    Token peek() const
     {
         return m_Tokens.at(m_Current);
     }
 
-    const Token &previous() const
+    Token previous() const
     {
         assert(m_Current > 0);
         return m_Tokens.at(m_Current - 1);
@@ -66,19 +75,6 @@ public:
     void error(std::string_view message) const
     {
         m_ErrorHandler.error(peek(), message);
-    }
-
-private:
-    //---------------------------------------------------------------------------
-    // Private methods
-    //---------------------------------------------------------------------------
-    Token advance()
-    {
-        if(!isAtEnd()) {
-            m_Current++;
-        }
-
-        return previous();
     }
 
     bool check(Token::Type type) const
@@ -109,6 +105,26 @@ private:
 class ParseError
 {
 };
+
+void synchronise(ParserState &parserState)
+{
+    parserState.advance();
+    while(!parserState.isAtEnd()) {
+        if(parserState.previous().type == Token::Type::SEMICOLON) {
+            return;
+        }
+
+        switch(parserState.peek().type) {
+        case Token::Type::FOR:
+        case Token::Type::IF:
+        case Token::Type::WHILE:
+        case Token::Type::TYPE_SPECIFIER:
+            return;
+        }
+
+        parserState.advance();
+    }
+}
 
 // Helper to parse binary expressions
 // **THINK I think this COULD be variadic but not clear if that's a good idea or not
@@ -153,8 +169,12 @@ const Expression::Base *parsePrimary(ParserState &parserState)
         else {
             // **TODO** memory leak
             parserState.error("Expect ')' after expression");
+            throw ParseError();
         }
     }
+
+    parserState.error("Expect expression");
+    throw ParseError();
 }
 const Expression::Base *parsePostfix(ParserState &parserState)
 {
@@ -269,6 +289,11 @@ std::unique_ptr<const Expression::Base> parseTokens(const std::vector<Token> &to
 {
     ParserState parserState(tokens, errorHandler);
 
-    return nullptr;
+    try {
+        return std::unique_ptr<const Expression::Base>(parseExpression(parserState));
+    }
+    catch(ParseError &) {
+        return nullptr;
+    }
 }
 }

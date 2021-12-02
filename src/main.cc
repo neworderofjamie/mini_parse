@@ -3,7 +3,10 @@
 #include <regex>
 #include <string>
 
+#include "error_handler.h"
 #include "expression.h"
+#include "parser.h"
+#include "pretty_printer.h"
 #include "scanner.h"
 
 std::string test(
@@ -75,17 +78,52 @@ std::string removeOldStyleVar(const std::string &input) {
  
     return std::regex_replace(input, variable, "$1");
 }
+
+class ErrorHandler : public MiniParse::ErrorHandler
+{
+public:
+    ErrorHandler() : m_Error(false)
+    {}
+
+    bool hasError() const { return m_Error; }
+
+    virtual void error(size_t line, std::string_view message) override
+    {
+        report(line, "", message);
+    }
+
+    virtual void error(const MiniParse::Token &token, std::string_view message) override
+    {
+        if(token.type == MiniParse::Token::Type::END_OF_FILE) {
+            report(token.line, " at end", message);
+        }
+        else {
+            report(token.line, " at '" + std::string{token.lexeme} + "'", message);
+        }
+    }
+
+private:
+    void report(size_t line, std::string_view where, std::string_view message)
+    {
+        std::cerr << "[line " << line << "] Error" << where << ": " << message << std::endl;
+        m_Error = true;
+    }
+
+    bool m_Error;
+};
 int main()
 {
-    using namespace MiniParse;
-
-    const auto test2Fix = removeOldStyleVar(test2);
+    ErrorHandler errorHandler;
     try
     {
-        //const auto tokens = Scanner::scanSource(test2Fix);
+        // Scan
+        const auto tokens = MiniParse::Scanner::scanSource("((12 + 4) * 5) + 3", errorHandler);
 
-       
-
+        // Parse
+        auto expression = MiniParse::Parser::parseTokens(tokens, errorHandler);
+        
+        MiniParse::PrettyPrinter printer;
+        std::cout << printer.print(*expression) << std::endl;
     }
     catch(const std::exception &e) {
         std::cerr << e.what() << std::endl;
