@@ -77,18 +77,15 @@ std::string removeOldStyleVar(const std::string &input) {
 }
 int main()
 {
-    using namespace Parser;
+    using namespace MiniParse;
 
     const auto test2Fix = removeOldStyleVar(test2);
     try
     {
-        //const auto tokens = Scanner::scanTokens(test2Fix);
+        //const auto tokens = Scanner::scanSource(test2Fix);
 
        
 
-    }
-    catch(const Scanner::Error &s) {
-        std::cerr << s.what() << std::endl;
     }
     catch(const std::exception &e) {
         std::cerr << e.what() << std::endl;

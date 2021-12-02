@@ -8,6 +8,9 @@
 // Standard C includes
 #include <cctype>
 
+// Mini-parse includes
+#include "error_handler.h"
+
 using namespace MiniParse;
 using namespace MiniParse::Scanner;
 
@@ -38,14 +41,14 @@ const std::unordered_map<std::string_view, Token::Type> keywords{
     {"bool", Token::Type::TYPE_SPECIFIER}};
 
 //---------------------------------------------------------------------------
-// CharCursor
+// ScanState
 //---------------------------------------------------------------------------
 //! Class encapsulated logic to navigate through source characters
-class CharCursor
+class ScanState
 {
 public:
-    CharCursor(std::string_view source)
-        : m_Start(0), m_Current(0), m_Source(source), m_Line(1)
+    ScanState(std::string_view source, ErrorHandler &errorHandler)
+        : m_Start(0), m_Current(0), m_Source(source), m_Line(1), m_ErrorHandler(errorHandler)
     {}
 
     //---------------------------------------------------------------------------
@@ -103,6 +106,10 @@ public:
 
     void nextLine() { m_Line++; }
 
+    void error(std::string_view message)
+    {
+        m_ErrorHandler.error(getLine(), message);
+    }
 private:
     //---------------------------------------------------------------------------
     // Members
@@ -112,6 +119,8 @@ private:
     size_t m_Line;
 
     const std::string_view m_Source;
+
+    ErrorHandler &m_ErrorHandler;
 };
 
 bool isodigit(char c)
@@ -133,220 +142,220 @@ T toCharsThrow(std::string_view input, std::chars_format format = std::chars_for
     return out;
 }
 //---------------------------------------------------------------------------
-void emplaceToken(std::vector<Token> &tokens, Token::Type type, const CharCursor &cursor, Token::LiteralValue literalValue = Token::LiteralValue())
+void emplaceToken(std::vector<Token> &tokens, Token::Type type, const ScanState &scanState, Token::LiteralValue literalValue = Token::LiteralValue())
 {
-    tokens.emplace_back(type, cursor.getLexeme(), cursor.getLine(), literalValue);
+    tokens.emplace_back(type, scanState.getLexeme(), scanState.getLine(), literalValue);
 }
 //---------------------------------------------------------------------------
-void scanIntegerSuffix(CharCursor &cursor)
+void scanIntegerSuffix(ScanState &scanState)
 {
     // Read suffix
     // **TODO** complete
-    while(std::tolower(cursor.peek()) == 'u' || std::tolower(cursor.peek()) == 'l') {
-        cursor.advance();
+    while(std::tolower(scanState.peek()) == 'u' || std::tolower(scanState.peek()) == 'l') {
+        scanState.advance();
     }
 }
 //---------------------------------------------------------------------------
-void scanNumber(CharCursor &cursor, std::vector<Token> &tokens) 
+void scanNumber(ScanState &scanState, std::vector<Token> &tokens) 
 {
     // If this is a hexadecimal literal
-    if(cursor.peek() == '0' && std::tolower(cursor.peekNext()) == 'x') {
+    if(scanState.peek() == '0' && std::tolower(scanState.peekNext()) == 'x') {
         // Advance past
-        cursor.advance();
-        cursor.advance();
+        scanState.advance();
+        scanState.advance();
 
         // Read hexadecimal digits
-        while(std::isxdigit(cursor.peek())) {
-            cursor.advance();
+        while(std::isxdigit(scanState.peek())) {
+            scanState.advance();
         }
 
         // Read decimal place
         bool isFloat = false;
-        if(cursor.peek() == '.') {
+        if(scanState.peek() == '.') {
             isFloat = true;
-            cursor.advance();
+            scanState.advance();
         }
 
         // Read hexadecimal digits
-        while(std::isxdigit(cursor.peek())) {
-            cursor.advance();
+        while(std::isxdigit(scanState.peek())) {
+            scanState.advance();
         }
 
         // If number is float
         if(isFloat) {
             // Check there's an exponent as these are REQUIRED for floating point literals
-            if(cursor.peek() != 'p') {
-                throw Error(cursor.getLine(), "Hexadecimal floating point literal missing exponent.");
+            if(scanState.peek() != 'p') {
+                scanState.error("Hexadecimal floating point literal missing exponent.");
             }
             else {
                 // Read p
-                cursor.advance();
+                scanState.advance();
 
                 // Read sign
-                if(cursor.peek() == '-' || cursor.peek() == '+') {
-                    cursor.advance();
+                if(scanState.peek() == '-' || scanState.peek() == '+') {
+                    scanState.advance();
                 }
 
                 // Read DECIMAL digits
-                while(std::isdigit(cursor.peek())) {
-                    cursor.advance();
+                while(std::isdigit(scanState.peek())) {
+                    scanState.advance();
                 }
 
                 // If literal has floating point suffix
-                const char suffix = std::tolower(cursor.peek());
+                const char suffix = std::tolower(scanState.peek());
                 if(suffix == 'f') {
                     // Add single-precision token
                     // **NOTE** skip 0x prefix
-                    emplaceToken(tokens, Token::Type::NUMBER, cursor,
-                                 toCharsThrow<float>(cursor.getLexeme().substr(2), std::chars_format::hex));
+                    emplaceToken(tokens, Token::Type::NUMBER, scanState,
+                                 toCharsThrow<float>(scanState.getLexeme().substr(2), std::chars_format::hex));
 
                     // Advance
                     // **NOTE** we do this AFTER parsing float as std::to_chars doesn't deal with suffixes
-                    cursor.advance();
+                    scanState.advance();
                 }
                 // Add double-precision token
                 // **NOTE** skip 0x prefix
                 else {
-                    emplaceToken(tokens, Token::Type::NUMBER, cursor,
-                                 toCharsThrow<double>(cursor.getLexeme().substr(2), std::chars_format::hex));
+                    emplaceToken(tokens, Token::Type::NUMBER, scanState,
+                                 toCharsThrow<double>(scanState.getLexeme().substr(2), std::chars_format::hex));
                 }
             }
         }
         // Otherwise, number is hexadecimal integer
         else {
-            scanIntegerSuffix(cursor);
+            scanIntegerSuffix(scanState);
 
             // Add integer token
             // **TODO** different types
             // **NOTE** skip 0x prefix
-            emplaceToken(tokens, Token::Type::NUMBER, cursor,
-                         toCharsThrow<int64_t>(cursor.getLexeme().substr(2), std::chars_format::hex));
+            emplaceToken(tokens, Token::Type::NUMBER, scanState,
+                         toCharsThrow<int64_t>(scanState.getLexeme().substr(2), std::chars_format::hex));
         }
     }
     // Otherwise, if this is an octal integer
-    else if(cursor.peek() == '0' && isodigit(cursor.peekNext())){
-        throw ErrorUnsupported(cursor.getLine(), "Octal literals unsupported.");
+    else if(scanState.peek() == '0' && isodigit(scanState.peekNext())){
+        scanState.error("Octal literals unsupported.");
     }
     // Otherwise, if it's decimal
     else {
         // Read digits
-        while(std::isdigit(cursor.peek())) {
-            cursor.advance();
+        while(std::isdigit(scanState.peek())) {
+            scanState.advance();
         }
 
         // Read decimal place
         bool isFloat = false;
-        if(cursor.peek() == '.') {
+        if(scanState.peek() == '.') {
             isFloat = true;
-            cursor.advance();
+            scanState.advance();
         }
 
         // Read digits
-        while(std::isdigit(cursor.peek())) {
-            cursor.advance();
+        while(std::isdigit(scanState.peek())) {
+            scanState.advance();
         }
 
         // If it's float
         if(isFloat) {
             // If there's an exponent
-            if(cursor.peek() != 'e') {
+            if(scanState.peek() != 'e') {
                 // Read e
-                cursor.advance();
+                scanState.advance();
 
                 // Read sign
-                if(cursor.peek() == '-' || cursor.peek() == '+') {
-                    cursor.advance();
+                if(scanState.peek() == '-' || scanState.peek() == '+') {
+                    scanState.advance();
                 }
 
                 // Read digits
-                while(std::isdigit(cursor.peek())) {
-                    cursor.advance();
+                while(std::isdigit(scanState.peek())) {
+                    scanState.advance();
                 }
 
                 // If literal has floating point suffix
-                const char suffix = std::tolower(cursor.peek());
+                const char suffix = std::tolower(scanState.peek());
                 if(suffix == 'f') {
                     // Add single-precision token
-                    emplaceToken(tokens, Token::Type::NUMBER, cursor,
-                                 toCharsThrow<float>(cursor.getLexeme()));
+                    emplaceToken(tokens, Token::Type::NUMBER, scanState,
+                                 toCharsThrow<float>(scanState.getLexeme()));
 
                     // Advance
                     // **NOTE** we do this AFTER parsing float as std::to_chars doesn't deal with suffixes
-                    cursor.advance();
+                    scanState.advance();
                 }
                 // Otherwise, add double-precision token
                 else {
-                    emplaceToken(tokens, Token::Type::NUMBER, cursor,
-                                 toCharsThrow<double>(cursor.getLexeme()));
+                    emplaceToken(tokens, Token::Type::NUMBER, scanState,
+                                 toCharsThrow<double>(scanState.getLexeme()));
                 }
             }
         }
         // Otherwise, number is integer
         else {
-            scanIntegerSuffix(cursor);
+            scanIntegerSuffix(scanState);
 
             // Add integer token
             // **TODO** different types
-            emplaceToken(tokens, Token::Type::NUMBER, cursor,
-                         toCharsThrow<int64_t>(cursor.getLexeme()));
+            emplaceToken(tokens, Token::Type::NUMBER, scanState,
+                         toCharsThrow<int64_t>(scanState.getLexeme()));
         }
     }
 }
 //---------------------------------------------------------------------------
-void scanIdentifier(CharCursor &cursor, std::vector<Token> &tokens)
+void scanIdentifier(ScanState &scanState, std::vector<Token> &tokens)
 {
     // Read subsequent alphanumeric characters and underscores
-    while(std::isalnum(cursor.peek()) || cursor.peek() == '_') {
-        cursor.advance();
+    while(std::isalnum(scanState.peek()) || scanState.peek() == '_') {
+        scanState.advance();
     }
 
     // If identifier is a keyword, add appropriate token
-    const auto k = keywords.find(cursor.getLexeme());
+    const auto k = keywords.find(scanState.getLexeme());
     if(k != keywords.cend()) {
-        emplaceToken(tokens, k->second, cursor);
+        emplaceToken(tokens, k->second, scanState);
     }
     // Otherwise, add identifier token
     else {
-        emplaceToken(tokens, Token::Type::IDENTIFIER, cursor);
+        emplaceToken(tokens, Token::Type::IDENTIFIER, scanState);
     }
 }
 //---------------------------------------------------------------------------
-void scanToken(CharCursor &cursor, std::vector<Token> &tokens)
+void scanToken(ScanState &scanState, std::vector<Token> &tokens)
 {
     using namespace MiniParse;
 
-    char c = cursor.advance();
+    char c = scanState.advance();
     switch(c) {
         // Single character tokens
-        case '(': emplaceToken(tokens, Token::Type::LEFT_PAREN, cursor); break;
-        case ')': emplaceToken(tokens, Token::Type::RIGHT_PAREN, cursor); break;
-        case '{': emplaceToken(tokens, Token::Type::LEFT_BRACE, cursor); break;
-        case '}': emplaceToken(tokens, Token::Type::RIGHT_BRACE, cursor); break;
-        case ',': emplaceToken(tokens, Token::Type::COMMA, cursor); break;
-        case '.': emplaceToken(tokens, Token::Type::DOT, cursor); break;
-        case '-': emplaceToken(tokens, Token::Type::MINUS, cursor); break;
-        case '%': emplaceToken(tokens, Token::Type::PERCENT, cursor); break;
-        case '+': emplaceToken(tokens, Token::Type::PLUS, cursor); break;
-        case ';': emplaceToken(tokens, Token::Type::SEMICOLON, cursor); break;
-        case '*': emplaceToken(tokens, Token::Type::STAR, cursor); break;
-        case '~': emplaceToken(tokens, Token::Type::TILDA, cursor); break;
+        case '(': emplaceToken(tokens, Token::Type::LEFT_PAREN, scanState); break;
+        case ')': emplaceToken(tokens, Token::Type::RIGHT_PAREN, scanState); break;
+        case '{': emplaceToken(tokens, Token::Type::LEFT_BRACE, scanState); break;
+        case '}': emplaceToken(tokens, Token::Type::RIGHT_BRACE, scanState); break;
+        case ',': emplaceToken(tokens, Token::Type::COMMA, scanState); break;
+        case '.': emplaceToken(tokens, Token::Type::DOT, scanState); break;
+        case '-': emplaceToken(tokens, Token::Type::MINUS, scanState); break;
+        case '%': emplaceToken(tokens, Token::Type::PERCENT, scanState); break;
+        case '+': emplaceToken(tokens, Token::Type::PLUS, scanState); break;
+        case ';': emplaceToken(tokens, Token::Type::SEMICOLON, scanState); break;
+        case '*': emplaceToken(tokens, Token::Type::STAR, scanState); break;
+        case '~': emplaceToken(tokens, Token::Type::TILDA, scanState); break;
 
         // Operators
-        case '!': emplaceToken(tokens, cursor.match('=') ? Token::Type::NOT_EQUAL : Token::Type::NOT, cursor); break;
-        case '=': emplaceToken(tokens, cursor.match('=') ? Token::Type::EQUAL_EQUAL : Token::Type::EQUAL, cursor); break;
-        case '<': emplaceToken(tokens, cursor.match('=') ? Token::Type::LESS_EQUAL : Token::Type::LESS, cursor); break;
-        case '>': emplaceToken(tokens, cursor.match('=') ? Token::Type::GREATER_EQUAL : Token::Type::GREATER, cursor); break;
+        case '!': emplaceToken(tokens, scanState.match('=') ? Token::Type::NOT_EQUAL : Token::Type::NOT, scanState); break;
+        case '=': emplaceToken(tokens, scanState.match('=') ? Token::Type::EQUAL_EQUAL : Token::Type::EQUAL, scanState); break;
+        case '<': emplaceToken(tokens, scanState.match('=') ? Token::Type::LESS_EQUAL : Token::Type::LESS, scanState); break;
+        case '>': emplaceToken(tokens, scanState.match('=') ? Token::Type::GREATER_EQUAL : Token::Type::GREATER, scanState); break;
 
         case '/':
         {
             // Line comment
-            if(cursor.match('/')) {
-                while(cursor.peek() != '\n' && !cursor.isAtEnd()) {
-                    cursor.advance();
+            if(scanState.match('/')) {
+                while(scanState.peek() != '\n' && !scanState.isAtEnd()) {
+                    scanState.advance();
                 }
             }
             else {
-                emplaceToken(tokens, Token::Type::SLASH, cursor);
+                emplaceToken(tokens, Token::Type::SLASH, scanState);
             }
             break;
         }
@@ -358,13 +367,13 @@ void scanToken(CharCursor &cursor, std::vector<Token> &tokens)
             break;
 
         // New line
-        case '\n': cursor.nextLine(); break;
+        case '\n': scanState.nextLine(); break;
 
         default:
         {
             // If we have a digit or a period, scan number
             if(std::isdigit(c) || c == '.') {
-                scanNumber(cursor, tokens);
+                scanNumber(scanState, tokens);
             }
             // Otherwise, if 
             else if(c == '$') {
@@ -372,10 +381,10 @@ void scanToken(CharCursor &cursor, std::vector<Token> &tokens)
             }
             // Otherwise, scan identifier
             else if(std::isalpha(c) || c == '_') {
-                scanIdentifier(cursor, tokens);
+                scanIdentifier(scanState, tokens);
             }
             else {
-                throw Error(cursor.getLine(), "Unexpected character.");
+                scanState.error("Unexpected character.");
             }
         }
     }
@@ -387,22 +396,22 @@ void scanToken(CharCursor &cursor, std::vector<Token> &tokens)
 //---------------------------------------------------------------------------
 namespace MiniParse::Scanner
 {
-std::vector<Token> scanSource(const std::string_view &source)
+std::vector<Token> scanSource(const std::string_view &source, ErrorHandler &errorHandler)
 {
     std::vector<Token> tokens;
 
-    CharCursor cursor(source);
+    ScanState scanState(source, errorHandler);
 
     // Current line
     size_t line = 1;
 
     // Scan tokens
-    while(!cursor.isAtEnd()) {
-        cursor.resetLexeme();
-        scanToken(cursor, tokens);
+    while(!scanState.isAtEnd()) {
+        scanState.resetLexeme();
+        scanToken(scanState, tokens);
     }
 
-    emplaceToken(tokens, Token::Type::END_OF_FILE, cursor);
+    emplaceToken(tokens, Token::Type::END_OF_FILE, scanState);
     return tokens;
 }
 }

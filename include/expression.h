@@ -7,15 +7,15 @@
 #include "token.h"
 
 // Forward declarations
-namespace Parser::Expression 
+namespace MiniParse::Expression 
 {
 class Visitor;
 }
 
 //---------------------------------------------------------------------------
-// Parser::Expression::Base
+// MiniParse::Expression::Base
 //---------------------------------------------------------------------------
-namespace Parser::Expression
+namespace MiniParse::Expression
 {
 struct Base
 {
@@ -23,7 +23,7 @@ struct Base
 };
 
 //---------------------------------------------------------------------------
-// Parser::Expression::Binary
+// MiniParse::Expression::Binary
 //---------------------------------------------------------------------------
 class Binary : public Base
 {
@@ -45,7 +45,7 @@ private:
 };
 
 //---------------------------------------------------------------------------
-// Parser::Expression::Grouping
+// MiniParse::Expression::Grouping
 //---------------------------------------------------------------------------
 class Grouping : public Base
 {
@@ -63,7 +63,7 @@ private:
 };
 
 //---------------------------------------------------------------------------
-// Parser::Expression::Literal
+// MiniParse::Expression::Literal
 //---------------------------------------------------------------------------
 class Literal : public Base
 {
@@ -81,7 +81,7 @@ private:
 };
 
 //---------------------------------------------------------------------------
-// Parser::Expression::Unary
+// MiniParse::Expression::Unary
 //---------------------------------------------------------------------------
 class Unary : public Base
 {
@@ -102,7 +102,7 @@ private:
 
 
 //---------------------------------------------------------------------------
-// Parser::Expression::Visitor
+// MiniParse::Expression::Visitor
 //---------------------------------------------------------------------------
 class Visitor
 {
@@ -112,4 +112,4 @@ public:
     virtual void visit(const Literal &literal) = 0;
     virtual void visit(const Unary &unary) = 0;
 };
-}   // namespace Parser::Expression
+}   // namespace MiniParse::Expression

@@ -1,16 +1,16 @@
 #include "expression.h"
 
 //---------------------------------------------------------------------------
-// Parser::Expression::Binary
+// MiniParse::Expression::Binary
 //---------------------------------------------------------------------------
-namespace Parser::Expression
+namespace MiniParse::Expression
 {
 void Binary::accept(Visitor &visitor) const
 {
     visitor.visit(*this);
 }
 //---------------------------------------------------------------------------
-// Parser::Expression::Grouping
+// MiniParse::Expression::Grouping
 //---------------------------------------------------------------------------
 void Grouping::accept(Visitor &visitor) const
 {
@@ -18,7 +18,7 @@ void Grouping::accept(Visitor &visitor) const
 }
 
 //---------------------------------------------------------------------------
-// Parser::Expression::Literal
+// MiniParse::Expression::Literal
 //---------------------------------------------------------------------------
 void Literal::accept(Visitor &visitor) const
 {
@@ -26,7 +26,7 @@ void Literal::accept(Visitor &visitor) const
 }
 
 //---------------------------------------------------------------------------
-// Parser::Expression::Unary
+// MiniParse::Expression::Unary
 //---------------------------------------------------------------------------
 void Unary::accept(Visitor &visitor) const
 {

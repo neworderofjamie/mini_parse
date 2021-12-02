@@ -1,13 +1,11 @@
 #pragma once
 
 // Standard C++ includes
-#include <stdexcept>
-#include <string>
-#include <string_view>
-#include <variant>
+#include <memory>
 #include <vector>
 
 // Mini-parse includes
+#include "expression.h"
 #include "token.h"
 
 // Forward declarations
@@ -17,10 +15,9 @@ class ErrorHandler;
 }
 
 //---------------------------------------------------------------------------
-// MiniParse::Scanner::Error
+// MiniParse::Scanner::Parser
 //---------------------------------------------------------------------------
-namespace MiniParse::Scanner
+namespace MiniParse::Parser
 {
-std::vector<Token> scanSource(const std::string_view &source, ErrorHandler &errorHandler);
-
-}   // namespace Scanner
+std::unique_ptr<const Expression::Base> parseTokens(const std::vector<Token> &tokens, ErrorHandler &errorHandler);
+}   // MiniParse::MiniParse

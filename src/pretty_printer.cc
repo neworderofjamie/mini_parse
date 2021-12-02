@@ -5,16 +5,16 @@ template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
 template<class... Ts> overload(Ts...) -> overload<Ts...>; // line not needed in 
 
 //---------------------------------------------------------------------------
-// Parser::PrettyPrinter
+// MiniParse::PrettyPrinter
 //---------------------------------------------------------------------------
-namespace Parser
+namespace MiniParse
 {
 std::string PrettyPrinter::print(const Expression::Base &expression)
 {
     // Clear string stream
     m_StringStream.str("");
 
-    // Visit expression
+    // Visit parseExpression
     expression.accept(*this);
 
     // Return string stream contents
