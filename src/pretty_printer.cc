@@ -1,8 +1,7 @@
 #include "pretty_printer.h"
 
-
-template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
-template<class... Ts> overload(Ts...) -> overload<Ts...>; // line not needed in 
+// Mini-parse includes
+#include "utils.h"
 
 //---------------------------------------------------------------------------
 // MiniParse::PrettyPrinter
@@ -36,7 +35,7 @@ void PrettyPrinter::visit(const Expression::Grouping &grouping)
 void PrettyPrinter::visit(const Expression::Literal &literal)
 {
     std::visit(
-        overload{
+        Utils::Overload{
             [this](auto x) { m_StringStream << x; },
             [this](std::monostate) {m_StringStream << "invalid"; }},
         literal.getValue());

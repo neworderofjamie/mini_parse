@@ -5,9 +5,11 @@
 
 #include "error_handler.h"
 #include "expression.h"
+#include "interpreter.h"
 #include "parser.h"
 #include "pretty_printer.h"
 #include "scanner.h"
+#include "utils.h"
 
 std::string test(
     "if($(outRow) == $(maxOutRow)) {\n"
@@ -111,19 +113,41 @@ private:
 
     bool m_Error;
 };
+
+#define PRINT(TYPE) [](TYPE x){ std::cout << "("#TYPE")" << x; }
+
+void print(MiniParse::Token::LiteralValue v) 
+{
+    std::visit(
+        MiniParse::Utils::Overload{
+            PRINT(bool),
+            PRINT(float),
+            PRINT(double),
+            PRINT(uint32_t),
+            PRINT(int32_t),
+            PRINT(uint64_t),
+            PRINT(int64_t),
+            [](std::monostate) { std::cout << "invalid"; }},
+        v);
+}
+
 int main()
 {
     ErrorHandler errorHandler;
     try
     {
         // Scan
-        const auto tokens = MiniParse::Scanner::scanSource("((12 + 4) * 5) + 3", errorHandler);
+        const auto tokens = MiniParse::Scanner::scanSource("(((12 + 4) * 5) + 3) > 20", errorHandler);
 
         // Parse
         auto expression = MiniParse::Parser::parseTokens(tokens, errorHandler);
         
         MiniParse::PrettyPrinter printer;
         std::cout << printer.print(*expression) << std::endl;
+
+        MiniParse::Interpreter interpreter;
+        print(interpreter.evaluate(expression.get()));
+        std::cout << std::endl;
     }
     catch(const std::exception &e) {
         std::cerr << e.what() << std::endl;

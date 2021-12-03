@@ -148,13 +148,16 @@
   <ItemGroup>
     <ClInclude Include="include\error_handler.h" />
     <ClInclude Include="include\expression.h" />
+    <ClInclude Include="include\interpreter.h" />
     <ClInclude Include="include\parser.h" />
     <ClInclude Include="include\pretty_printer.h" />
     <ClInclude Include="include\scanner.h" />
     <ClInclude Include="include\token.h" />
+    <ClInclude Include="include\utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\expression.cc" />
+    <ClCompile Include="src\interpreter.cc" />
     <ClCompile Include="src\main.cc" />
     <ClCompile Include="src\parser.cc" />
     <ClCompile Include="src\pretty_printer.cc" />
