@@ -157,14 +157,10 @@ void scanIntegerSuffix(ScanState &scanState)
     }
 }
 //---------------------------------------------------------------------------
-void scanNumber(ScanState &scanState, std::vector<Token> &tokens) 
+void scanNumber(char c, ScanState &scanState, std::vector<Token> &tokens) 
 {
     // If this is a hexadecimal literal
-    if(scanState.peek() == '0' && std::tolower(scanState.peekNext()) == 'x') {
-        // Advance past
-        scanState.advance();
-        scanState.advance();
-
+    if(c == '0' && (scanState.match('x') || scanState.match('X'))) {
         // Read hexadecimal digits
         while(std::isxdigit(scanState.peek())) {
             scanState.advance();
@@ -234,7 +230,7 @@ void scanNumber(ScanState &scanState, std::vector<Token> &tokens)
         }
     }
     // Otherwise, if this is an octal integer
-    else if(scanState.peek() == '0' && isodigit(scanState.peekNext())){
+    else if(c == '0' && isodigit(scanState.peekNext())){
         scanState.error("Octal literals unsupported.");
     }
     // Otherwise, if it's decimal
@@ -374,11 +370,7 @@ void scanToken(ScanState &scanState, std::vector<Token> &tokens)
         {
             // If we have a digit or a period, scan number
             if(std::isdigit(c) || c == '.') {
-                scanNumber(scanState, tokens);
-            }
-            // Otherwise, if 
-            else if(c == '$') {
-
+                scanNumber(c, scanState, tokens);
             }
             // Otherwise, scan identifier
             else if(std::isalpha(c) || c == '_') {
