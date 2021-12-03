@@ -42,11 +42,31 @@ private:
 };
 
 //---------------------------------------------------------------------------
+// MiniParse::Print
+//---------------------------------------------------------------------------
+// **HACK** temporary until function calling is working
+class Print : public Base
+{
+public:
+    Print(const MiniParse::Expression::Base *expression)
+    :  m_Expression(expression)
+    {}
+
+    virtual void accept(Visitor &visitor) const override;
+
+    const MiniParse::Expression::Base *getExpression() const { return m_Expression.get(); }
+
+private:
+    const std::unique_ptr<const MiniParse::Expression::Base> m_Expression;
+};
+
+//---------------------------------------------------------------------------
 // MiniParse::Statement::Visitor
 //---------------------------------------------------------------------------
 class Visitor
 {
 public:
-    virtual void visit(const Expression &statement) = 0;
+    virtual void visit(const Expression &expression) = 0;
+    virtual void visit(const Print &print) = 0;
 };
 }   // namespace MiniParse::Statement

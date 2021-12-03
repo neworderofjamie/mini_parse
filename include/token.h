@@ -35,7 +35,7 @@ struct Token
         TYPE_SPECIFIER,
 
         // Keywords
-        CONST, DO, ELSE, FALSE, FOR, IF, TRUE, WHILE,
+        CONST, DO, ELSE, FALSE, FOR, IF, TRUE, WHILE, PRINT,
 
         END_OF_FILE,
     };

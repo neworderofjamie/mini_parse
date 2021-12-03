@@ -114,40 +114,25 @@ private:
     bool m_Error;
 };
 
-#define PRINT(TYPE) [](TYPE x){ std::cout << "("#TYPE")" << x; }
-
-void print(MiniParse::Token::LiteralValue v) 
-{
-    std::visit(
-        MiniParse::Utils::Overload{
-            PRINT(bool),
-            PRINT(float),
-            PRINT(double),
-            PRINT(uint32_t),
-            PRINT(int32_t),
-            PRINT(uint64_t),
-            PRINT(int64_t),
-            [](std::monostate) { std::cout << "invalid"; }},
-        v);
-}
-
 int main()
 {
     ErrorHandler errorHandler;
     try
     {
         // Scan
-        const auto tokens = MiniParse::Scanner::scanSource("(((12 + 4) * 5) + 3) > 20", errorHandler);
+        const auto tokens = MiniParse::Scanner::scanSource(
+            "print ((12 + 4) * 5) + 3;\n"
+            "print 12 > 4;\n"
+            "print 100;\n", errorHandler);
 
         // Parse
-        auto expression = MiniParse::Parser::parseTokens(tokens, errorHandler);
+        auto statements = MiniParse::Parser::parseStatements(tokens, errorHandler);
         
-        MiniParse::PrettyPrinter printer;
-        std::cout << printer.print(*expression) << std::endl;
+       //MiniParse::PrettyPrinter printer;
+        //std::cout << printer.print(*expression) << std::endl;
 
         MiniParse::Interpreter interpreter;
-        print(interpreter.evaluate(expression.get()));
-        std::cout << std::endl;
+        interpreter.interpret(statements);
     }
     catch(const std::exception &e) {
         std::cerr << e.what() << std::endl;

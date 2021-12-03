@@ -1,5 +1,8 @@
 #pragma once
 
+// Standard C++ includes
+#include <vector>
+
 // Mini-parse includes
 #include "expression.h"
 #include "statement.h"
@@ -16,7 +19,7 @@ public:
     // Public API
     //---------------------------------------------------------------------------
     Token::LiteralValue evaluate(const Expression::Base *expression);
-    void execute(const Statement::Base *statement);
+    void interpret(const std::vector<std::unique_ptr<const Statement::Base>> &statements);
 
     //---------------------------------------------------------------------------
     // Expression::Visitor virtuals
@@ -30,8 +33,10 @@ public:
     // Statement::Visitor virtuals
     //---------------------------------------------------------------------------
     virtual void visit(const Statement::Expression &expression) override;
+    virtual void visit(const Statement::Print &print) override;
 
 private:
+
     Token::LiteralValue m_Value;
 };
 }

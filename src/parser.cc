@@ -285,9 +285,25 @@ const Statement::Base *parseExpressionStatement(ParserState &parserState)
 {
     auto *expression = parseExpression(parserState);
     
-    // If expression is followed by a semicolon, return new statement expression
+    // If expression is followed by a semicolon, return new expression statement 
     if(parserState.match(Token::Type::SEMICOLON)) {
         return new Statement::Expression(expression);
+    }
+    // Otherwise, report error
+    else {
+        // **TODO** memory leak
+        parserState.error("Expect ';' after expression");
+        throw ParseError();
+    }
+}
+
+const Statement::Base *parsePrintStatement(ParserState &parserState)
+{
+    auto *expression = parseExpression(parserState);
+
+    // If expression is followed by a semicolon, return new print statement
+    if(parserState.match(Token::Type::SEMICOLON)) {
+        return new Statement::Print(expression);
     }
     // Otherwise, report error
     else {
@@ -302,10 +318,16 @@ const Statement::Base *parseStatement(ParserState &parserState)
     //      labeled-statement       // **TODO**
     //      compound-statement      // **TODO**
     //      expression-statement
+    //      print-statement         // **TEMP**
     //      selection-statement     // **TODO**
     //      iteration-statement     // **TODO**
     //      jump-statement          // **TODO**
-    return parseExpressionStatement(parserState);
+    if(parserState.match(Token::Type::PRINT)) {
+        return parsePrintStatement(parserState);
+    }
+    else {
+        return parseExpressionStatement(parserState);
+    }
 }
 }
 
@@ -315,7 +337,7 @@ const Statement::Base *parseStatement(ParserState &parserState)
 //---------------------------------------------------------------------------
 namespace MiniParse::Parser
 {
-std::unique_ptr<const Expression::Base> parseTokens(const std::vector<Token> &tokens, ErrorHandler &errorHandler)
+std::unique_ptr<const Expression::Base> parseExpression(const std::vector<Token> &tokens, ErrorHandler &errorHandler)
 {
     ParserState parserState(tokens, errorHandler);
 
@@ -325,5 +347,16 @@ std::unique_ptr<const Expression::Base> parseTokens(const std::vector<Token> &to
     catch(ParseError &) {
         return nullptr;
     }
+}
+
+std::vector<std::unique_ptr<const Statement::Base>> parseStatements(const std::vector<Token> &tokens, ErrorHandler &errorHandler)
+{
+    ParserState parserState(tokens, errorHandler);
+    std::vector<std::unique_ptr<const Statement::Base>> statements;
+
+    while(!parserState.isAtEnd()) {
+        statements.emplace_back(parseStatement(parserState));
+    }
+    return statements;
 }
 }

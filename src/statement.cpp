@@ -9,4 +9,9 @@ void Expression::accept(Visitor &visitor) const
 {
     visitor.visit(*this);
 }
+//---------------------------------------------------------------------------
+void Print::accept(Visitor &visitor) const
+{
+    visitor.visit(*this);
 }
+}   // namespace MiniParse::Statement

@@ -2,8 +2,10 @@
 
 // Standard C++ includes
 #include <limits>
+#include <iostream>
 #include <stdexcept>
 #include <type_traits>
+
 
 // Standard C includes
 #include <cassert>
@@ -22,9 +24,11 @@ Token::LiteralValue Interpreter::evaluate(const Expression::Base *expression)
     return m_Value;
 }
 //---------------------------------------------------------------------------
-void Interpreter::execute(const Statement::Base *statement)
+void Interpreter::interpret(const std::vector<std::unique_ptr<const Statement::Base>> &statements)
 {
-    statement->accept(*this);
+    for(auto &s : statements) {
+        s.get()->accept(*this);
+    }
 }
 //---------------------------------------------------------------------------
 void Interpreter::visit(const Expression::Binary &binary)
@@ -133,4 +137,25 @@ void Interpreter::visit(const Statement::Expression &expression)
 {
     evaluate(expression.getExpression());
 }
+//---------------------------------------------------------------------------
+void Interpreter::visit(const Statement::Print &print)
+{
+#define PRINT(TYPE) [](TYPE x){ std::cout << "("#TYPE")" << x << std::endl; }
+
+    auto value = evaluate(print.getExpression());
+    std::visit(
+        MiniParse::Utils::Overload{
+            PRINT(bool),
+            PRINT(float),
+            PRINT(double),
+            PRINT(uint32_t),
+            PRINT(int32_t),
+            PRINT(uint64_t),
+            PRINT(int64_t),
+            [](std::monostate) { std::cout << "invalid"; }},
+        value);
+
+#undef PRINT
+}
+
 }   // namespace MiniParse
