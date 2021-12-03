@@ -275,7 +275,37 @@ const Expression::Base *parseEquality(ParserState &parserState)
 
 const Expression::Base *parseExpression(ParserState &parserState)
 {
+    // expression ::=
+    //      assignment-expression                   // **TODO**
+    //      expression "," assignment-expression    // **TODO**
     return parseEquality(parserState);
+}
+
+const Statement::Base *parseExpressionStatement(ParserState &parserState)
+{
+    auto *expression = parseExpression(parserState);
+    
+    // If expression is followed by a semicolon, return new statement expression
+    if(parserState.match(Token::Type::SEMICOLON)) {
+        return new Statement::Expression(expression);
+    }
+    // Otherwise, report error
+    else {
+        // **TODO** memory leak
+        parserState.error("Expect ';' after expression");
+        throw ParseError();
+    }
+}
+const Statement::Base *parseStatement(ParserState &parserState)
+{
+    // statement ::=
+    //      labeled-statement       // **TODO**
+    //      compound-statement      // **TODO**
+    //      expression-statement
+    //      selection-statement     // **TODO**
+    //      iteration-statement     // **TODO**
+    //      jump-statement          // **TODO**
+    return parseExpressionStatement(parserState);
 }
 }
 

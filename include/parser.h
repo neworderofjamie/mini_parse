@@ -6,6 +6,7 @@
 
 // Mini-parse includes
 #include "expression.h"
+#include "statement.h"
 #include "token.h"
 
 // Forward declarations

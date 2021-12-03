@@ -152,6 +152,7 @@
     <ClInclude Include="include\parser.h" />
     <ClInclude Include="include\pretty_printer.h" />
     <ClInclude Include="include\scanner.h" />
+    <ClInclude Include="include\statement.h" />
     <ClInclude Include="include\token.h" />
     <ClInclude Include="include\utils.h" />
   </ItemGroup>
@@ -162,6 +163,7 @@
     <ClCompile Include="src\parser.cc" />
     <ClCompile Include="src\pretty_printer.cc" />
     <ClCompile Include="src\scanner.cc" />
+    <ClCompile Include="src\statement.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

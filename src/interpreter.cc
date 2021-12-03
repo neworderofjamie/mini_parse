@@ -22,6 +22,11 @@ Token::LiteralValue Interpreter::evaluate(const Expression::Base *expression)
     return m_Value;
 }
 //---------------------------------------------------------------------------
+void Interpreter::execute(const Statement::Base *statement)
+{
+    statement->accept(*this);
+}
+//---------------------------------------------------------------------------
 void Interpreter::visit(const Expression::Binary &binary)
 {
     auto leftValue = evaluate(binary.getLeft());
@@ -122,5 +127,10 @@ void Interpreter::visit(const Expression::Unary &unary)
                 rightValue);*/
     }
 
+}
+//---------------------------------------------------------------------------
+void Interpreter::visit(const Statement::Expression &expression)
+{
+    evaluate(expression.getExpression());
 }
 }   // namespace MiniParse
