@@ -17,6 +17,13 @@ using namespace MiniParse;
 namespace
 {
 //---------------------------------------------------------------------------
+// ParseError
+//---------------------------------------------------------------------------
+class ParseError
+{
+};
+
+//---------------------------------------------------------------------------
 // ParserState
 //---------------------------------------------------------------------------
 //! Class encapsulated logic to navigate through tokens
@@ -77,6 +84,16 @@ public:
         m_ErrorHandler.error(peek(), message);
     }
 
+    Token consume(Token::Type type, std::string_view message) 
+    {
+        if(check(type)) {
+            return advance();
+        }
+
+        error(message);
+        throw ParseError();
+     }
+
     bool check(Token::Type type) const
     {
         if(isAtEnd()) {
@@ -88,7 +105,7 @@ public:
     }
 
     bool isAtEnd() const { return (peek().type == Token::Type::END_OF_FILE); }
-
+private:
     //---------------------------------------------------------------------------
     // Members
     //---------------------------------------------------------------------------
@@ -99,12 +116,6 @@ public:
     ErrorHandler &m_ErrorHandler;
 };
 
-//---------------------------------------------------------------------------
-// ParseError
-//---------------------------------------------------------------------------
-class ParseError
-{
-};
 
 void synchronise(ParserState &parserState)
 {
@@ -154,23 +165,17 @@ const Expression::Base *parsePrimary(ParserState &parserState)
     else if(parserState.match(Token::Type::TRUE)) {
         return new Expression::Literal(true);
     }
-    if(parserState.match(Token::Type::NUMBER)) {
+    else if(parserState.match(Token::Type::NUMBER)) {
         return new Expression::Literal(parserState.previous().literalValue);
     }
-
-    if(parserState.match(Token::Type::LEFT_PAREN)) {
+    else if(parserState.match(Token::Type::IDENTIFIER)) {
+        return new Expression::Variable(parserState.previous());
+    }
+    else if(parserState.match(Token::Type::LEFT_PAREN)) {
         auto *expression = parseExpression(parserState);
 
-        // If expression is followed by parenthesis
-        if(parserState.match(Token::Type::RIGHT_PAREN)) {
-            return new Expression::Grouping(expression);
-        }
-        // Otherwise, report error
-        else {
-            // **TODO** memory leak
-            parserState.error("Expect ')' after expression");
-            throw ParseError();
-        }
+        parserState.consume(Token::Type::RIGHT_PAREN, "Expect ')' after expression");
+        return new Expression::Grouping(expression);
     }
 
     parserState.error("Expect expression");
@@ -285,33 +290,18 @@ const Statement::Base *parseExpressionStatement(ParserState &parserState)
 {
     auto *expression = parseExpression(parserState);
     
-    // If expression is followed by a semicolon, return new expression statement 
-    if(parserState.match(Token::Type::SEMICOLON)) {
-        return new Statement::Expression(expression);
-    }
-    // Otherwise, report error
-    else {
-        // **TODO** memory leak
-        parserState.error("Expect ';' after expression");
-        throw ParseError();
-    }
+    parserState.consume(Token::Type::SEMICOLON, "Expect ';' after expression");
+    return new Statement::Expression(expression);
 }
 
 const Statement::Base *parsePrintStatement(ParserState &parserState)
 {
     auto *expression = parseExpression(parserState);
 
-    // If expression is followed by a semicolon, return new print statement
-    if(parserState.match(Token::Type::SEMICOLON)) {
-        return new Statement::Print(expression);
-    }
-    // Otherwise, report error
-    else {
-        // **TODO** memory leak
-        parserState.error("Expect ';' after expression");
-        throw ParseError();
-    }
+    parserState.consume(Token::Type::SEMICOLON, "Expect ';' after expression");
+    return new Statement::Print(expression);
 }
+
 const Statement::Base *parseStatement(ParserState &parserState)
 {
     // statement ::=
@@ -329,7 +319,41 @@ const Statement::Base *parseStatement(ParserState &parserState)
         return parseExpressionStatement(parserState);
     }
 }
+
+const Statement::Base *parseVarDeclaration(ParserState &parserState)
+{
+    // **TODO** think about relation to C99 grammar
+    
+    Token type = parserState.previous();
+    Token name = parserState.consume(Token::Type::IDENTIFIER, "Expect variable name");
+
+    const Expression::Base *initialiser = nullptr;
+    if(parserState.match(Token::Type::EQUAL)) {
+        initialiser = parseExpression(parserState);
+    }
+
+    parserState.consume(Token::Type::SEMICOLON, "Expect ';' after variable declaration");
+    return new Statement::VarDeclaration(type, name, initialiser);
 }
+
+const Statement::Base *parseDeclaration(ParserState &parserState)
+{
+    // **TODO** think about relation to C99 grammar
+    try {
+        if(parserState.match(Token::Type::TYPE_SPECIFIER)) {
+            return parseVarDeclaration(parserState);
+        }
+        else {
+            return parseStatement(parserState);
+        }
+    }
+    catch(ParseError &) {
+        synchronise(parserState);
+        return nullptr;
+    }
+}
+
+}   // Anonymous namespace
 
 
 //---------------------------------------------------------------------------
@@ -355,7 +379,7 @@ std::vector<std::unique_ptr<const Statement::Base>> parseStatements(const std::v
     std::vector<std::unique_ptr<const Statement::Base>> statements;
 
     while(!parserState.isAtEnd()) {
-        statements.emplace_back(parseStatement(parserState));
+        statements.emplace_back(parseDeclaration(parserState));
     }
     return statements;
 }

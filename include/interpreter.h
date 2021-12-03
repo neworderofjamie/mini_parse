@@ -1,6 +1,8 @@
 #pragma once
 
 // Standard C++ includes
+#include <list>
+#include <unordered_map>
 #include <vector>
 
 // Mini-parse includes
@@ -8,7 +10,7 @@
 #include "statement.h"
 
 //---------------------------------------------------------------------------
-// MiniParse::PrettyPrinter
+// MiniParse::Interpreter
 //---------------------------------------------------------------------------
 namespace MiniParse
 {
@@ -27,16 +29,38 @@ public:
     virtual void visit(const Expression::Binary &binary) override;
     virtual void visit(const Expression::Grouping &grouping) override;
     virtual void visit(const Expression::Literal &literal) override;
+    virtual void visit(const Expression::Variable &variable) override;
     virtual void visit(const Expression::Unary &unary) override;
     
     //---------------------------------------------------------------------------
     // Statement::Visitor virtuals
     //---------------------------------------------------------------------------
     virtual void visit(const Statement::Expression &expression) override;
+    virtual void visit(const Statement::VarDeclaration &varDeclaration) override;
     virtual void visit(const Statement::Print &print) override;
 
 private:
+    //---------------------------------------------------------------------------
+    // MiniParse::Interpreter::Environment
+    //---------------------------------------------------------------------------
+    class Environment
+    {
+    public:
+        // **TODO** type
+        void define(const Token &name, Token::LiteralValue value);
 
+        // **TODO** type
+        Token::LiteralValue get(const Token &name) const;
+
+    private:
+        std::unordered_map<std::string_view, Token::LiteralValue> m_Values;
+    };
+
+    //---------------------------------------------------------------------------
+    // Members
+    //---------------------------------------------------------------------------
     Token::LiteralValue m_Value;
+    
+    Environment m_Environment;
 };
 }

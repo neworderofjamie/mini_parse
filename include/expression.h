@@ -81,6 +81,24 @@ private:
 };
 
 //---------------------------------------------------------------------------
+// MiniParse::Expression::Variable
+//---------------------------------------------------------------------------
+class Variable : public Base
+{
+public:
+    Variable(Token name)
+    :  m_Name(name)
+    {}
+
+    virtual void accept(Visitor &visitor) const override;
+
+   const Token &getName() const { return m_Name; }
+
+private:
+    const Token m_Name;
+};
+
+//---------------------------------------------------------------------------
 // MiniParse::Expression::Unary
 //---------------------------------------------------------------------------
 class Unary : public Base
@@ -110,6 +128,7 @@ public:
     virtual void visit(const Binary &binary) = 0;
     virtual void visit(const Grouping &grouping) = 0;
     virtual void visit(const Literal &literal) = 0;
+    virtual void visit(const Variable &variable) = 0;
     virtual void visit(const Unary &unary) = 0;
 };
 }   // namespace MiniParse::Expression

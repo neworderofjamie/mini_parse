@@ -121,9 +121,11 @@ int main()
     {
         // Scan
         const auto tokens = MiniParse::Scanner::scanSource(
-            "print ((12 + 4) * 5) + 3;\n"
+            "int x = 4;\n"
+            "print ((12 + x) * 5) + 3;\n"
             "print 12 > 4;\n"
-            "print 100;\n", errorHandler);
+            "print 100;\n"
+            "print true;\n", errorHandler);
 
         // Parse
         auto statements = MiniParse::Parser::parseStatements(tokens, errorHandler);
