@@ -19,14 +19,17 @@ struct Token
     enum class Type
     {
         // Single-character tokens
-        LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE, COMMA,
-        DOT, MINUS, PERCENT, PLUS, SEMICOLON, SLASH, STAR, TILDA,
+        LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE, COMMA, PIPE, CARET,
+        DOT, MINUS, PERCENT, PLUS, SEMICOLON, SLASH, STAR, TILDA, AMPERSAND, 
 
         // One or two character tokens
         NOT, NOT_EQUAL,
-        EQUAL, EQUAL_EQUAL,
+        EQUAL_EQUAL,
         GREATER, GREATER_EQUAL,
         LESS, LESS_EQUAL,
+        EQUAL, STAR_EQUAL, SLASH_EQUAL, PERCENT_EQUAL, PLUS_EQUAL,
+        MINUS_EQUAL, AMPERSAND_EQUAL, CARET_EQUAL, PIPE_EQUAL,
+        // **TODO** <<= and >>=
 
         // Literals   
         IDENTIFIER, NUMBER,

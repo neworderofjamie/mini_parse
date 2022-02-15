@@ -328,11 +328,7 @@ void scanToken(ScanState &scanState, std::vector<Token> &tokens)
         case '}': emplaceToken(tokens, Token::Type::RIGHT_BRACE, scanState); break;
         case ',': emplaceToken(tokens, Token::Type::COMMA, scanState); break;
         case '.': emplaceToken(tokens, Token::Type::DOT, scanState); break;
-        case '-': emplaceToken(tokens, Token::Type::MINUS, scanState); break;
-        case '%': emplaceToken(tokens, Token::Type::PERCENT, scanState); break;
-        case '+': emplaceToken(tokens, Token::Type::PLUS, scanState); break;
         case ';': emplaceToken(tokens, Token::Type::SEMICOLON, scanState); break;
-        case '*': emplaceToken(tokens, Token::Type::STAR, scanState); break;
         case '~': emplaceToken(tokens, Token::Type::TILDA, scanState); break;
 
         // Operators
@@ -341,6 +337,16 @@ void scanToken(ScanState &scanState, std::vector<Token> &tokens)
         case '<': emplaceToken(tokens, scanState.match('=') ? Token::Type::LESS_EQUAL : Token::Type::LESS, scanState); break;
         case '>': emplaceToken(tokens, scanState.match('=') ? Token::Type::GREATER_EQUAL : Token::Type::GREATER, scanState); break;
 
+        // Assignement operators
+        case '*': emplaceToken(tokens, scanState.match('=') ? Token::Type::STAR_EQUAL : Token::Type::STAR, scanState); break;
+        //case '/': emplaceToken(tokens, scanState.match('=') ? Token::Type::SLASH_EQUAL : Token::Type::SLASH, scanState); break;
+        case '%': emplaceToken(tokens, scanState.match('=') ? Token::Type::PERCENT_EQUAL : Token::Type::PERCENT, scanState); break;
+        case '+': emplaceToken(tokens, scanState.match('=') ? Token::Type::PLUS_EQUAL : Token::Type::PLUS, scanState); break;
+        case '-': emplaceToken(tokens, scanState.match('=') ? Token::Type::MINUS_EQUAL : Token::Type::MINUS, scanState); break;
+        case '&': emplaceToken(tokens, scanState.match('=') ? Token::Type::AMPERSAND_EQUAL : Token::Type::AMPERSAND, scanState); break;
+        case '^': emplaceToken(tokens, scanState.match('=') ? Token::Type::CARET_EQUAL : Token::Type::CARET, scanState); break;
+        case '|': emplaceToken(tokens, scanState.match('=') ? Token::Type::PIPE_EQUAL : Token::Type::PIPE, scanState); break;
+        
         case '/':
         {
             // Line comment
