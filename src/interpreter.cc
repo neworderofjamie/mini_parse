@@ -116,7 +116,7 @@ Token::LiteralValue Interpreter::evaluate(const Expression::Base *expression)
     return m_Value;
 }
 //---------------------------------------------------------------------------
-void Interpreter::interpret(const std::vector<std::unique_ptr<const Statement::Base>> &statements, Environment &environment)
+void Interpreter::interpret(const Statement::StatementList &statements, Environment &environment)
 {
     Environment *previous = m_Environment;
     m_Environment = &environment;

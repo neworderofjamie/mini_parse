@@ -22,13 +22,15 @@ struct Base
     virtual void accept(Visitor &visitor) const = 0;
 };
 
+typedef std::unique_ptr<Base const> ExpressionPtr;
+
 //---------------------------------------------------------------------------
 // MiniParse::Expression::Assignment
 //---------------------------------------------------------------------------
 class Assignment : public Base
 {
 public:
-    Assignment(Token varName, Token::Type op, std::unique_ptr<const Base> value)
+    Assignment(Token varName, Token::Type op, ExpressionPtr value)
     :  m_VarName(varName), m_Operator(op), m_Value(std::move(value))
     {}
 
@@ -41,7 +43,7 @@ public:
 private:
     const Token m_VarName;
     const Token::Type m_Operator;
-    const std::unique_ptr<const Base> m_Value;
+    const ExpressionPtr m_Value;
 };
 
 //---------------------------------------------------------------------------
@@ -50,7 +52,7 @@ private:
 class Binary : public Base
 {
 public:
-    Binary(std::unique_ptr<const Base> left, Token op, std::unique_ptr<const Base> right)
+    Binary(ExpressionPtr left, Token op, ExpressionPtr right)
     :  m_Left(std::move(left)), m_Operator(op), m_Right(std::move(right))
     {}
 
@@ -61,9 +63,9 @@ public:
     const Base *getRight() const { return m_Right.get(); }
 
 private:
-    const std::unique_ptr<const Base> m_Left;
+    const ExpressionPtr m_Left;
     const Token m_Operator;
-    const std::unique_ptr<const Base> m_Right;
+    const ExpressionPtr m_Right;
 };
 
 //---------------------------------------------------------------------------
@@ -72,7 +74,7 @@ private:
 class Grouping : public Base
 {
 public:
-    Grouping(std::unique_ptr<const Base> expression)
+    Grouping(ExpressionPtr expression)
     :  m_Expression(std::move(expression))
     {}
 
@@ -81,7 +83,7 @@ public:
     const Base *getExpression() const { return m_Expression.get(); }
 
 private:
-    const std::unique_ptr<const Base> m_Expression;
+    const ExpressionPtr m_Expression;
 };
 
 //---------------------------------------------------------------------------
@@ -126,7 +128,7 @@ private:
 class Unary : public Base
 {
 public:
-    Unary(Token op, std::unique_ptr<const Base> right)
+    Unary(Token op, ExpressionPtr right)
     :  m_Operator(op), m_Right(std::move(right))
     {}
 
@@ -137,7 +139,7 @@ public:
 
 private:
     const Token m_Operator;
-    const std::unique_ptr<const Base> m_Right;
+    const ExpressionPtr m_Right;
 };
 
 

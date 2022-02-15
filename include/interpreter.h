@@ -50,7 +50,7 @@ public:
     // Public API
     //---------------------------------------------------------------------------
     Token::LiteralValue evaluate(const Expression::Base *expression);
-    void interpret(const std::vector<std::unique_ptr<const Statement::Base>> &statements, Environment &environment);
+    void interpret(const Statement::StatementList &statements, Environment &environment);
 
     //---------------------------------------------------------------------------
     // Expression::Visitor virtuals

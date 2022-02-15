@@ -23,6 +23,8 @@ struct Base
     virtual void accept(Visitor &visitor) const = 0;
 };
 
+typedef std::unique_ptr<Base const> StatementPtr;
+typedef std::vector<StatementPtr> StatementList;
 
 //---------------------------------------------------------------------------
 // MiniParse::Statement::Compound
@@ -30,18 +32,16 @@ struct Base
 class Compound : public Base
 {
 public:
-    typedef std::vector<std::unique_ptr<const Statement::Base>> Statements;
-
-    Compound(Statements statements)
+    Compound(StatementList statements)
     :  m_Statements(std::move(statements))
     {}
 
     virtual void accept(Visitor &visitor) const override;
 
-    const Statements &getStatements() const { return m_Statements; }
+    const StatementList &getStatements() const { return m_Statements; }
 
 private:
-    const Statements m_Statements;
+    const StatementList m_Statements;
 };
 
 //---------------------------------------------------------------------------
@@ -50,7 +50,7 @@ private:
 class Expression : public Base
 {
 public:
-    Expression(std::unique_ptr<MiniParse::Expression::Base const> expression)
+    Expression(MiniParse::Expression::ExpressionPtr expression)
     :  m_Expression(std::move(expression))
     {}
 
@@ -59,7 +59,7 @@ public:
     const MiniParse::Expression::Base *getExpression() const { return m_Expression.get(); }
 
 private:
-    const std::unique_ptr<const MiniParse::Expression::Base> m_Expression;
+    const MiniParse::Expression::ExpressionPtr m_Expression;
 };
 
 //---------------------------------------------------------------------------
@@ -68,7 +68,7 @@ private:
 class VarDeclaration : public Base
 {
 public:
-    typedef std::vector<std::tuple<Token, std::unique_ptr<const MiniParse::Expression::Base>>> InitDeclaratorList;
+    typedef std::vector<std::tuple<Token, MiniParse::Expression::ExpressionPtr>> InitDeclaratorList;
 
     VarDeclaration(std::vector<Token> declarationSpecifiers, InitDeclaratorList initDeclaratorList)
     :   m_DeclarationSpecifiers(std::move(declarationSpecifiers)), m_InitDeclaratorList(std::move(initDeclaratorList))
@@ -91,7 +91,7 @@ private:
 class Print : public Base
 {
 public:
-    Print(std::unique_ptr<MiniParse::Expression::Base const> expression)
+    Print(MiniParse::Expression::ExpressionPtr expression)
     :  m_Expression(std::move(expression))
     {}
 
@@ -100,7 +100,7 @@ public:
     const MiniParse::Expression::Base *getExpression() const { return m_Expression.get(); }
 
 private:
-    const std::unique_ptr<const MiniParse::Expression::Base> m_Expression;
+    const MiniParse::Expression::ExpressionPtr m_Expression;
 };
 
 //---------------------------------------------------------------------------

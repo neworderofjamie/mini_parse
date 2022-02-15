@@ -20,7 +20,7 @@ class ErrorHandler;
 //---------------------------------------------------------------------------
 namespace MiniParse::Parser
 {
-std::unique_ptr<const Expression::Base> parseExpression(const std::vector<Token> &tokens, ErrorHandler &errorHandler);
+Expression::ExpressionPtr parseExpression(const std::vector<Token> &tokens, ErrorHandler &errorHandler);
 
-std::vector<std::unique_ptr<const Statement::Base>> parseStatements(const std::vector<Token> &tokens, ErrorHandler &errorHandler);
+Statement::StatementList parseStatements(const std::vector<Token> &tokens, ErrorHandler &errorHandler);
 }   // MiniParse::MiniParse
