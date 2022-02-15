@@ -337,7 +337,7 @@ void scanToken(ScanState &scanState, std::vector<Token> &tokens)
         case '<': emplaceToken(tokens, scanState.match('=') ? Token::Type::LESS_EQUAL : Token::Type::LESS, scanState); break;
         case '>': emplaceToken(tokens, scanState.match('=') ? Token::Type::GREATER_EQUAL : Token::Type::GREATER, scanState); break;
 
-        // Assignement operators
+        // Assignment operators
         case '*': emplaceToken(tokens, scanState.match('=') ? Token::Type::STAR_EQUAL : Token::Type::STAR, scanState); break;
         //case '/': emplaceToken(tokens, scanState.match('=') ? Token::Type::SLASH_EQUAL : Token::Type::SLASH, scanState); break;
         case '%': emplaceToken(tokens, scanState.match('=') ? Token::Type::PERCENT_EQUAL : Token::Type::PERCENT, scanState); break;

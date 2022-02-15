@@ -32,6 +32,12 @@ void Interpreter::interpret(const std::vector<std::unique_ptr<const Statement::B
     }
 }
 //---------------------------------------------------------------------------
+void Interpreter::visit(const Expression::Assignment &assignment)
+{
+    auto value = evaluate(assignment.getValue());
+    m_Environment.assign(assignment.getVarName(), value, assignment.getOperator());
+}
+//---------------------------------------------------------------------------
 void Interpreter::visit(const Expression::Binary &binary)
 {
     auto leftValue = evaluate(binary.getLeft());
@@ -149,12 +155,11 @@ void Interpreter::visit(const Statement::VarDeclaration &varDeclaration)
     // **TODO** something with type
     for(const auto &var : varDeclaration.getInitDeclaratorList()) {
         Token::LiteralValue value;
-         if(std::get<1>(var) != nullptr) {
+        if(std::get<1>(var) != nullptr) {
             evaluate(std::get<1>(var).get());
             value = m_Value;
-            m_Environment.define(std::get<0>(var), value);
-
         }
+        m_Environment.define(std::get<0>(var), value);
     }
 }
 //---------------------------------------------------------------------------
@@ -184,6 +189,66 @@ void Interpreter::Environment::define(const Token &name, Token::LiteralValue val
 {
     if(!m_Values.try_emplace(name.lexeme, value).second) {
         throw std::runtime_error("Redeclaration of '" + std::string{name.lexeme} + "' at line " + std::to_string(name.line));
+    }
+}
+//---------------------------------------------------------------------------
+void Interpreter::Environment::assign(const Token &name, Token::LiteralValue value, Token::Type op)
+{
+    auto variable = m_Values.find(name.lexeme);
+    if(variable == m_Values.end()) {
+        throw std::runtime_error("Undefined variable '" + std::string{name.lexeme} + "' at line " + std::to_string(name.line));
+    }
+    else {
+        variable->second = std::visit(
+            Utils::Overload{
+                [op](auto variable, auto assign)
+                { 
+                    typedef typename std::common_type<decltype(variable), decltype(assign)>::type R;
+                    const R comVariable = static_cast<R>(variable);
+                    const R comAssign = static_cast<R>(assign);
+                    if(op == Token::Type::EQUAL) {
+                        return MiniParse::Token::LiteralValue(assign);
+                    }
+                    else if(op == Token::Type::STAR_EQUAL) {
+                        return MiniParse::Token::LiteralValue(variable * assign);
+                    }
+                    else if(op == Token::Type::SLASH_EQUAL) {
+                        return MiniParse::Token::LiteralValue(variable / assign);
+                    }
+                    /*else if(op == Token::Type::PERCENT_EQUAL) {
+                        return MiniParse::Token::LiteralValue(variable % assign);
+                    }*/
+                    else if(op == Token::Type::PLUS_EQUAL) {
+                        return MiniParse::Token::LiteralValue(variable + assign);
+                    }
+                     else if(op == Token::Type::MINUS_EQUAL) {
+                        return MiniParse::Token::LiteralValue(variable - assign);
+                    }
+                    /*else if(op == Token::Type::AMPERSAND_EQUAL) {
+                        return MiniParse::Token::LiteralValue(variable & assign);
+                    }
+                    else if(op == Token::Type::CARET_EQUAL) {
+                        return MiniParse::Token::LiteralValue(variable ^ assign);
+                    }
+                    else if(op == Token::Type::PIPE_EQUAL) {
+                        return MiniParse::Token::LiteralValue(variable | assign);
+                    }*/
+                    else {
+                        throw std::runtime_error("Unsupported assignment operation");
+                    }
+                },
+                [](std::monostate, std::monostate) { return MiniParse::Token::LiteralValue(); },
+                [op](std::monostate, auto assign) 
+                { 
+                    if(op == Token::Type::EQUAL) {
+                        return MiniParse::Token::LiteralValue(assign);
+                    }
+                    else {
+                        return MiniParse::Token::LiteralValue();
+                    }
+                },
+                [](auto, std::monostate) { return MiniParse::Token::LiteralValue(); }},
+            variable->second, value);
     }
 }
 //---------------------------------------------------------------------------

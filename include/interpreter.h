@@ -26,6 +26,7 @@ public:
     //---------------------------------------------------------------------------
     // Expression::Visitor virtuals
     //---------------------------------------------------------------------------
+    virtual void visit(const Expression::Assignment &assignement) override;
     virtual void visit(const Expression::Binary &binary) override;
     virtual void visit(const Expression::Grouping &grouping) override;
     virtual void visit(const Expression::Literal &literal) override;
@@ -48,6 +49,9 @@ private:
     public:
         // **TODO** type
         void define(const Token &name, Token::LiteralValue value);
+
+        // **TODO** type
+        void assign(const Token &name, Token::LiteralValue value, Token::Type op);
 
         // **TODO** type
         Token::LiteralValue get(const Token &name) const;

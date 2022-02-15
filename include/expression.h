@@ -23,6 +23,28 @@ struct Base
 };
 
 //---------------------------------------------------------------------------
+// MiniParse::Expression::Assignment
+//---------------------------------------------------------------------------
+class Assignment : public Base
+{
+public:
+    Assignment(Token varName, Token::Type op, std::unique_ptr<const Base> value)
+    :  m_VarName(varName), m_Operator(op), m_Value(std::move(value))
+    {}
+
+    virtual void accept(Visitor &visitor) const override;
+
+    const Token &getVarName() const { return m_VarName; }
+    const Token::Type &getOperator() const { return m_Operator; }
+    const Base *getValue() const { return m_Value.get(); }
+
+private:
+    const Token m_VarName;
+    const Token::Type m_Operator;
+    const std::unique_ptr<const Base> m_Value;
+};
+
+//---------------------------------------------------------------------------
 // MiniParse::Expression::Binary
 //---------------------------------------------------------------------------
 class Binary : public Base
@@ -125,6 +147,7 @@ private:
 class Visitor
 {
 public:
+    virtual void visit(const Assignment &assignement) = 0;
     virtual void visit(const Binary &binary) = 0;
     virtual void visit(const Grouping &grouping) = 0;
     virtual void visit(const Literal &literal) = 0;

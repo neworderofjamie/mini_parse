@@ -121,9 +121,13 @@ int main()
     {
         // Scan
         const auto tokens = MiniParse::Scanner::scanSource(
-            "int x = 4, y = 12;\n"
+            "int x = 4, y;\n"
             "print ((12 + x) * 5) + 3;\n"
+            "y = 12;\n"
             "print y > 4;\n"
+            "print y;\n"
+            "y *= 2;\n"
+            "print y;\n"
             "print 100;\n"
             "print true;\n", errorHandler);
 

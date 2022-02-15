@@ -7,6 +7,7 @@
     }
 
 
+IMPLEMENT_ACCEPT(Assignment)
 IMPLEMENT_ACCEPT(Binary)
 IMPLEMENT_ACCEPT(Grouping)
 IMPLEMENT_ACCEPT(Literal)

@@ -84,6 +84,11 @@ public:
         m_ErrorHandler.error(peek(), message);
     }
 
+    void error(Token token, std::string_view message) const
+    {
+        m_ErrorHandler.error(token, message);
+    }
+
     Token consume(Token::Type type, std::string_view message) 
     {
         if(check(type)) {
@@ -276,12 +281,38 @@ std::unique_ptr<const Expression::Base> parseEquality(ParserState &parserState)
                        {Token::Type::NOT_EQUAL, Token::Type::EQUAL_EQUAL});
 }
 
+std::unique_ptr<const Expression::Base> parseConditional(ParserState &parserState)
+{
+    // conditional-expression ::=
+    //      logical-OR-expression
+    //      logical-OR-expression "?" expression ":" conditional-expression
+    return parseEquality(parserState);
+}
+
 std::unique_ptr<const Expression::Base> parseAssignment(ParserState &parserState)
 {
-    // assignment - expression :: =
-    //      conditional - expression
-    //      unary - expression assignment - operator assignment - expression
-    return parseEquality(parserState);
+    // assignment-expression ::=
+    //      conditional-expression
+    //      unary-expression assignment-operator assignment-expression
+    auto expression = parseConditional(parserState);
+    if(parserState.match({Token::Type::EQUAL, Token::Type::STAR_EQUAL, Token::Type::SLASH_EQUAL, 
+                          Token::Type::PERCENT_EQUAL, Token::Type::PLUS_EQUAL, Token::Type::MINUS_EQUAL, 
+                          Token::Type::AMPERSAND_EQUAL, Token::Type::CARET_EQUAL, Token::Type::PIPE_EQUAL})) 
+    {
+        Token op = parserState.previous();
+        auto value = parseAssignment(parserState);
+
+        // **TODO** everything all the way up(?) from unary are l-value so can be used - not just variable
+        auto expressionVariable = dynamic_cast<const Expression::Variable*>(expression.get());
+        if(expressionVariable != nullptr) {
+            return std::make_unique<const Expression::Assignment>(expressionVariable->getName(), op.type, std::move(value));
+        }
+        else {
+            parserState.error(op, "Invalid assignement target");
+        }
+    }
+
+    return expression;
 }
 
 std::unique_ptr<const Expression::Base> parseExpression(ParserState &parserState)
