@@ -28,8 +28,8 @@ struct Base
 class Binary : public Base
 {
 public:
-    Binary(const Base *left, Token op, const Base *right)
-    :  m_Left(left), m_Operator(op), m_Right(right)
+    Binary(std::unique_ptr<const Base> left, Token op, std::unique_ptr<const Base> right)
+    :  m_Left(std::move(left)), m_Operator(op), m_Right(std::move(right))
     {}
 
     virtual void accept(Visitor &visitor) const override;
@@ -50,8 +50,8 @@ private:
 class Grouping : public Base
 {
 public:
-    Grouping(const Base *expression)
-    :  m_Expression(expression)
+    Grouping(std::unique_ptr<const Base> expression)
+    :  m_Expression(std::move(expression))
     {}
 
     virtual void accept(Visitor &visitor) const override;
@@ -104,8 +104,8 @@ private:
 class Unary : public Base
 {
 public:
-    Unary(Token op, const Base *right)
-    :  m_Operator(op), m_Right(right)
+    Unary(Token op, std::unique_ptr<const Base> right)
+    :  m_Operator(op), m_Right(std::move(right))
     {}
 
     virtual void accept(Visitor &visitor) const override;

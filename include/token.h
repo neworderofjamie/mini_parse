@@ -33,9 +33,10 @@ struct Token
 
         // Types
         TYPE_SPECIFIER,
+        TYPE_QUALIFIER,
 
         // Keywords
-        CONST, DO, ELSE, FALSE, FOR, IF, TRUE, WHILE, PRINT,
+        DO, ELSE, FALSE, FOR, IF, TRUE, WHILE, PRINT,
 
         END_OF_FILE,
     };

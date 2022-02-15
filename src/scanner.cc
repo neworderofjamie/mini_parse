@@ -20,7 +20,7 @@ using namespace MiniParse::Scanner;
 namespace
 {
 const std::unordered_map<std::string_view, Token::Type> keywords{
-    {"const", Token::Type::CONST},
+    {"const", Token::Type::TYPE_QUALIFIER},
     {"do", Token::Type::DO},
     {"else", Token::Type::ELSE},
     {"false", Token::Type::FALSE},
@@ -29,12 +29,10 @@ const std::unordered_map<std::string_view, Token::Type> keywords{
     {"true", Token::Type::TRUE},
     {"while", Token::Type::WHILE},
     {"print", Token::Type::PRINT},  // **HACK**
-    // **TEMP** just map types to tokens here too
     {"char", Token::Type::TYPE_SPECIFIER},
     {"short", Token::Type::TYPE_SPECIFIER},
     {"int", Token::Type::TYPE_SPECIFIER},
     {"long", Token::Type::TYPE_SPECIFIER},
-    {"scalar", Token::Type::TYPE_SPECIFIER},
     {"float", Token::Type::TYPE_SPECIFIER},
     {"double", Token::Type::TYPE_SPECIFIER},
     {"signed", Token::Type::TYPE_SPECIFIER},

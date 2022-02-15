@@ -146,14 +146,16 @@ void Interpreter::visit(const Statement::Expression &expression)
 //---------------------------------------------------------------------------
 void Interpreter::visit(const Statement::VarDeclaration &varDeclaration)
 {
-    Token::LiteralValue value;
+    // **TODO** something with type
+    for(const auto &var : varDeclaration.getInitDeclaratorList()) {
+        Token::LiteralValue value;
+         if(std::get<1>(var) != nullptr) {
+            evaluate(std::get<1>(var).get());
+            value = m_Value;
+            m_Environment.define(std::get<0>(var), value);
 
-    if(varDeclaration.getInitialiser() != nullptr) {
-        evaluate(varDeclaration.getInitialiser() );
-        value = m_Value;
+        }
     }
-
-    m_Environment.define(varDeclaration.getName(), value);
 }
 //---------------------------------------------------------------------------
 void Interpreter::visit(const Statement::Print &print)

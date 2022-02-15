@@ -2,6 +2,7 @@
 
 // Standard C++ includes
 #include <memory>
+#include <vector>
 
 // Mini-parse includes
 #include "expression.h"
@@ -29,8 +30,8 @@ struct Base
 class Expression : public Base
 {
 public:
-    Expression(const MiniParse::Expression::Base *expression)
-    :  m_Expression(expression)
+    Expression(std::unique_ptr<MiniParse::Expression::Base const> expression)
+    :  m_Expression(std::move(expression))
     {}
 
     virtual void accept(Visitor &visitor) const override;
@@ -47,20 +48,20 @@ private:
 class VarDeclaration : public Base
 {
 public:
-    VarDeclaration(Token type, Token name, const MiniParse::Expression::Base *initialiser)
-    :   m_Type(type), m_Name(name), m_Initializer(initialiser)
+    typedef std::vector<std::tuple<Token, std::unique_ptr<const MiniParse::Expression::Base>>> InitDeclaratorList;
+
+    VarDeclaration(std::vector<Token> declarationSpecifiers, InitDeclaratorList initDeclaratorList)
+    :   m_DeclarationSpecifiers(std::move(declarationSpecifiers)), m_InitDeclaratorList(std::move(initDeclaratorList))
     {}
 
     virtual void accept(Visitor &visitor) const override;
 
-    const Token &getType() const { return m_Type;  }
-    const Token &getName() const { return m_Name; }
-    const MiniParse::Expression::Base *getInitialiser() const { return m_Initializer.get(); }
-
+    const std::vector<Token> &getDeclarationSpecifiers() const { return m_DeclarationSpecifiers; }
+    const InitDeclaratorList &getInitDeclaratorList() const { return m_InitDeclaratorList; }
+    
 private:
-    const Token m_Type;
-    const Token m_Name;
-    const std::unique_ptr<const MiniParse::Expression::Base> m_Initializer;
+    const std::vector<Token> m_DeclarationSpecifiers;
+    const InitDeclaratorList m_InitDeclaratorList;
 };
 
 //---------------------------------------------------------------------------
@@ -70,8 +71,8 @@ private:
 class Print : public Base
 {
 public:
-    Print(const MiniParse::Expression::Base *expression)
-    :  m_Expression(expression)
+    Print(std::unique_ptr<MiniParse::Expression::Base const> expression)
+    :  m_Expression(std::move(expression))
     {}
 
     virtual void accept(Visitor &visitor) const override;

@@ -140,48 +140,48 @@ void synchronise(ParserState &parserState)
 // Helper to parse binary expressions
 // **THINK I think this COULD be variadic but not clear if that's a good idea or not
 template<typename N>
-const Expression::Base *parseBinary(ParserState &parserState, N nonTerminal, std::initializer_list<Token::Type> types)
+std::unique_ptr<const Expression::Base> parseBinary(ParserState &parserState, N nonTerminal, std::initializer_list<Token::Type> types)
 {
-    auto *expression = nonTerminal(parserState);
+    auto expression = nonTerminal(parserState);
     while(parserState.match(types)) {
         Token op = parserState.previous();
-        expression = new Expression::Binary(expression, op, nonTerminal(parserState));
+        expression = std::make_unique<const Expression::Binary>(std::move(expression), op, nonTerminal(parserState));
     }
 
     return expression;
 }
 
-const Expression::Base *parseExpression(ParserState &parserState);
+std::unique_ptr<const Expression::Base> parseExpression(ParserState &parserState);
 
-const Expression::Base *parsePrimary(ParserState &parserState)
+std::unique_ptr<const Expression::Base> parsePrimary(ParserState &parserState)
 {
     // primary-expression ::=
     //      identifier
     //      constant
     //      "(" expression ")"
     if(parserState.match(Token::Type::FALSE)) {
-        return new Expression::Literal(false);
+        return std::make_unique<const Expression::Literal>(false);
     }
     else if(parserState.match(Token::Type::TRUE)) {
-        return new Expression::Literal(true);
+        return std::make_unique<const Expression::Literal>(true);
     }
     else if(parserState.match(Token::Type::NUMBER)) {
-        return new Expression::Literal(parserState.previous().literalValue);
+        return std::make_unique<const Expression::Literal>(parserState.previous().literalValue);
     }
     else if(parserState.match(Token::Type::IDENTIFIER)) {
-        return new Expression::Variable(parserState.previous());
+        return std::make_unique<const Expression::Variable>(parserState.previous());
     }
     else if(parserState.match(Token::Type::LEFT_PAREN)) {
-        auto *expression = parseExpression(parserState);
+        auto expression = parseExpression(parserState);
 
         parserState.consume(Token::Type::RIGHT_PAREN, "Expect ')' after expression");
-        return new Expression::Grouping(expression);
+        return std::make_unique<Expression::Grouping>(std::move(expression));
     }
 
     parserState.error("Expect expression");
     throw ParseError();
 }
-const Expression::Base *parsePostfix(ParserState &parserState)
+std::unique_ptr<const Expression::Base> parsePostfix(ParserState &parserState)
 {
     // postfix-expression ::=
     //      primary-expression
@@ -195,7 +195,7 @@ const Expression::Base *parsePostfix(ParserState &parserState)
 }
 
 
-const Expression::Base *parseUnary(ParserState &parserState)
+std::unique_ptr<const Expression::Base> parseUnary(ParserState &parserState)
 {
     // unary-expression ::=
     //      postfix-expression
@@ -209,13 +209,13 @@ const Expression::Base *parseUnary(ParserState &parserState)
     //      "sizeof" "(" type-name ")"      **TODO** 
     if(parserState.match({Token::Type::PLUS, Token::Type::MINUS, Token::Type::TILDA, Token::Type::NOT})) {
         Token op = parserState.previous();
-        return new Expression::Unary(op, parseUnary(parserState));
+        return std::make_unique<Expression::Unary>(op, parseUnary(parserState));
     }
 
     return parsePostfix(parserState);
 }
 
-const Expression::Base *parseCast(ParserState &parserState)
+std::unique_ptr<const Expression::Base> parseCast(ParserState &parserState)
 {
     // cast-expression ::=
     //      unary-expression
@@ -223,7 +223,7 @@ const Expression::Base *parseCast(ParserState &parserState)
     return parseUnary(parserState);
 }
 
-const Expression::Base *parseMultiplicative(ParserState &parserState)
+std::unique_ptr<const Expression::Base> parseMultiplicative(ParserState &parserState)
 {
     // multiplicative-expression ::=
     //      cast-expression
@@ -234,7 +234,7 @@ const Expression::Base *parseMultiplicative(ParserState &parserState)
                        {Token::Type::STAR, Token::Type::SLASH, Token::Type::PERCENT});
 }
 
-const Expression::Base *parseAdditive(ParserState &parserState)
+std::unique_ptr<const Expression::Base> parseAdditive(ParserState &parserState)
 {
     // additive-expression ::=
     //      multiplicative-expression
@@ -244,7 +244,7 @@ const Expression::Base *parseAdditive(ParserState &parserState)
                        {Token::Type::MINUS, Token::Type::PLUS});
 }
 
-const Expression::Base *parseShift(ParserState &parserState)
+std::unique_ptr<const Expression::Base> parseShift(ParserState &parserState)
 {
     // shift-expression ::=
     //      additive-expression
@@ -253,7 +253,7 @@ const Expression::Base *parseShift(ParserState &parserState)
     return parseAdditive(parserState);
 }
 
-const Expression::Base *parseRelational(ParserState &parserState)
+std::unique_ptr<const Expression::Base> parseRelational(ParserState &parserState)
 {
     // relational-expression ::=
     //      shift-expression
@@ -266,7 +266,7 @@ const Expression::Base *parseRelational(ParserState &parserState)
                         Token::Type::LESS, Token::Type::LESS_EQUAL});
 }
 
-const Expression::Base *parseEquality(ParserState &parserState)
+std::unique_ptr<const Expression::Base> parseEquality(ParserState &parserState)
 {
     // equality-expression ::=
     //      relational-expression
@@ -276,31 +276,41 @@ const Expression::Base *parseEquality(ParserState &parserState)
                        {Token::Type::NOT_EQUAL, Token::Type::EQUAL_EQUAL});
 }
 
-const Expression::Base *parseExpression(ParserState &parserState)
+std::unique_ptr<const Expression::Base> parseAssignment(ParserState &parserState)
+{
+    // assignment - expression :: =
+    //      conditional - expression
+    //      unary - expression assignment - operator assignment - expression
+    return parseEquality(parserState);
+}
+
+std::unique_ptr<const Expression::Base> parseExpression(ParserState &parserState)
 {
     // expression ::=
     //      assignment-expression                   // **TODO**
     //      expression "," assignment-expression    // **TODO**
-    return parseEquality(parserState);
+    return parseAssignment(parserState);
 }
 
-const Statement::Base *parseExpressionStatement(ParserState &parserState)
+std::unique_ptr<const Statement::Base> parseExpressionStatement(ParserState &parserState)
 {
-    auto *expression = parseExpression(parserState);
+    //  expression-statement ::=
+    //      expression? ";"
+    auto expression = parseExpression(parserState);
     
     parserState.consume(Token::Type::SEMICOLON, "Expect ';' after expression");
-    return new Statement::Expression(expression);
+    return std::make_unique<const Statement::Expression>(std::move(expression));
 }
 
-const Statement::Base *parsePrintStatement(ParserState &parserState)
+std::unique_ptr<const Statement::Base> parsePrintStatement(ParserState &parserState)
 {
-    auto *expression = parseExpression(parserState);
+    auto expression = parseExpression(parserState);
 
     parserState.consume(Token::Type::SEMICOLON, "Expect ';' after expression");
-    return new Statement::Print(expression);
+    return std::make_unique<const Statement::Print>(std::move(expression));
 }
 
-const Statement::Base *parseStatement(ParserState &parserState)
+std::unique_ptr<const Statement::Base> parseStatement(ParserState &parserState)
 {
     // statement ::=
     //      labeled-statement       // **TODO**
@@ -318,7 +328,7 @@ const Statement::Base *parseStatement(ParserState &parserState)
     }
 }
 
-const Statement::Base *parseDeclaration(ParserState &parserState)
+std::unique_ptr<const Statement::Base> parseDeclaration(ParserState &parserState)
 {
     // declaration ::=
     //      declaration-specifiers init-declarator-list? ";"
@@ -338,19 +348,20 @@ const Statement::Base *parseDeclaration(ParserState &parserState)
     //      "signed"
     //      "unsigned"
     //      "bool"
-    //      typedef-name
+    //      typedef-name    // **TODO** not sure how to address ambiguity with subsequent identifier
 
     // type-qualifier ::=
     //      "const"
 
-    // **TODO** type specifier and qualifier in either order
-    Token type = parserState.previous();
+    // Build declaration specifier list (single list of specifiers and qualifiers is fine for our purposes)
+    std::vector<Token> declarationSpecifiers{parserState.previous()};
+    while(parserState.match({Token::Type::TYPE_QUALIFIER, Token::Type::TYPE_SPECIFIER})) {
+        declarationSpecifiers.push_back(parserState.previous());
+    }
 
-
-    Token name = parserState.consume(Token::Type::IDENTIFIER, "Expect variable name");
-
-    const Expression::Base *initialiser = nullptr;
-    if(parserState.match(Token::Type::EQUAL)) {
+    // Read init declarator list
+    std::vector<std::tuple<Token, std::unique_ptr<const Expression::Base>>> initDeclaratorList;
+    do {
         // init-declarator-list ::=
         //      init-declarator
         //      init-declarator-list "," init-declarator
@@ -361,22 +372,25 @@ const Statement::Base *parseDeclaration(ParserState &parserState)
 
         // declarator ::=
         //      identifier
-        //      "(" declarator ")"
-        initialiser = parseExpression(parserState);
-    }
+        Token identifier = parserState.consume(Token::Type::IDENTIFIER, "Expect variable name");
+        std::unique_ptr<const Expression::Base> initialiser;
+        if(parserState.match(Token::Type::EQUAL)) {
+            initialiser = parseAssignment(parserState);
+        }
+        initDeclaratorList.emplace_back(identifier, std::move(initialiser));
+    } while(!parserState.isAtEnd() && parserState.match(Token::Type::COMMA));
 
     parserState.consume(Token::Type::SEMICOLON, "Expect ';' after variable declaration");
-    return new Statement::VarDeclaration(type, name, initialiser);
+    return std::make_unique<const Statement::VarDeclaration>(std::move(declarationSpecifiers), std::move(initDeclaratorList));
 }
 
-const Statement::Base *parseBlockItem(ParserState &parserState)
+std::unique_ptr<const Statement::Base> parseBlockItem(ParserState &parserState)
 {
     // block-item ::=
     //      declaration
     //      statement
     try {
-        // **TODO** 
-        if(parserState.match(Token::Type::TYPE_SPECIFIER)) {
+        if(parserState.match({Token::Type::TYPE_SPECIFIER, Token::Type::TYPE_QUALIFIER})) {
             return parseDeclaration(parserState);
         }
         else {
@@ -388,7 +402,6 @@ const Statement::Base *parseBlockItem(ParserState &parserState)
         return nullptr;
     }
 }
-
 }   // Anonymous namespace
 
 
@@ -402,7 +415,7 @@ std::unique_ptr<const Expression::Base> parseExpression(const std::vector<Token>
     ParserState parserState(tokens, errorHandler);
 
     try {
-        return std::unique_ptr<const Expression::Base>(parseExpression(parserState));
+        return parseExpression(parserState);
     }
     catch(ParseError &) {
         return nullptr;
@@ -415,7 +428,7 @@ std::vector<std::unique_ptr<const Statement::Base>> parseStatements(const std::v
     std::vector<std::unique_ptr<const Statement::Base>> statements;
 
     while(!parserState.isAtEnd()) {
-        statements.emplace_back(parseDeclaration(parserState));
+        statements.emplace_back(parseBlockItem(parserState));
     }
     return statements;
 }
