@@ -120,7 +120,7 @@ int main()
     try
     {
         // Scan
-        const auto tokens = MiniParse::Scanner::scanSource(
+       /*const auto tokens = MiniParse::Scanner::scanSource(
             "int x = 4, y;\n"
             "print ((12 + x) * 5) + 3;\n"
             "y = 12;\n"
@@ -129,16 +129,25 @@ int main()
             "y *= 2;\n"
             "print y;\n"
             "print 100;\n"
-            "print true;\n", errorHandler);
-
+            "print true;\n", errorHandler);*/
+        const auto tokens = MiniParse::Scanner::scanSource(
+            "int x = 4;\n"
+            "print x;\n"
+            "{\n"
+            "    int x = 7, y = 8;\n"
+            "    print x;\n"
+            "}\n"
+            "print x;\n"
+            "print y;\n", errorHandler);
         // Parse
         auto statements = MiniParse::Parser::parseStatements(tokens, errorHandler);
         
        //MiniParse::PrettyPrinter printer;
         //std::cout << printer.print(*expression) << std::endl;
 
+        MiniParse::Interpreter::Environment environment;
         MiniParse::Interpreter interpreter;
-        interpreter.interpret(statements);
+        interpreter.interpret(statements, environment);
     }
     catch(const std::exception &e) {
         std::cerr << e.what() << std::endl;

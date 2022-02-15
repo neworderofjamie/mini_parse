@@ -157,6 +157,7 @@ std::unique_ptr<const Expression::Base> parseBinary(ParserState &parserState, N 
 }
 
 std::unique_ptr<const Expression::Base> parseExpression(ParserState &parserState);
+std::unique_ptr<const Statement::Base> parseBlockItem(ParserState &parserState);
 
 std::unique_ptr<const Expression::Base> parsePrimary(ParserState &parserState)
 {
@@ -341,11 +342,30 @@ std::unique_ptr<const Statement::Base> parsePrintStatement(ParserState &parserSt
     return std::make_unique<const Statement::Print>(std::move(expression));
 }
 
+std::unique_ptr<const Statement::Base> parseCompoundStatement(ParserState &parserState)
+{
+    // compound-statement ::=
+    //      "{" block-item-list? "}"
+    // block-item-list ::=
+    //      block-item
+    //      block-item-list block-item
+    // block-item ::=
+    //      declaration
+    //      statement
+    Statement::Compound::Statements statements;
+    while(!parserState.check(Token::Type::RIGHT_BRACE) && !parserState.isAtEnd()) {
+        statements.emplace_back(parseBlockItem(parserState));
+    }
+    parserState.consume(Token::Type::RIGHT_BRACE, "Expect '}' after compound statement.");
+
+    return std::make_unique<const Statement::Compound>(std::move(statements));
+}
+
 std::unique_ptr<const Statement::Base> parseStatement(ParserState &parserState)
 {
     // statement ::=
     //      labeled-statement       // **TODO**
-    //      compound-statement      // **TODO**
+    //      compound-statement
     //      expression-statement
     //      print-statement         // **TEMP**
     //      selection-statement     // **TODO**
@@ -353,6 +373,9 @@ std::unique_ptr<const Statement::Base> parseStatement(ParserState &parserState)
     //      jump-statement          // **TODO**
     if(parserState.match(Token::Type::PRINT)) {
         return parsePrintStatement(parserState);
+    }
+    else if(parserState.match(Token::Type::LEFT_BRACE)) {
+        return parseCompoundStatement(parserState);
     }
     else {
         return parseExpressionStatement(parserState);

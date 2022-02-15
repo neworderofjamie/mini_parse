@@ -25,6 +25,26 @@ struct Base
 
 
 //---------------------------------------------------------------------------
+// MiniParse::Statement::Compound
+//---------------------------------------------------------------------------
+class Compound : public Base
+{
+public:
+    typedef std::vector<std::unique_ptr<const Statement::Base>> Statements;
+
+    Compound(Statements statements)
+    :  m_Statements(std::move(statements))
+    {}
+
+    virtual void accept(Visitor &visitor) const override;
+
+    const Statements &getStatements() const { return m_Statements; }
+
+private:
+    const Statements m_Statements;
+};
+
+//---------------------------------------------------------------------------
 // MiniParse::Statement::Expression
 //---------------------------------------------------------------------------
 class Expression : public Base
@@ -89,6 +109,7 @@ private:
 class Visitor
 {
 public:
+    virtual void visit(const Compound& compound) = 0;
     virtual void visit(const Expression &expression) = 0;
     virtual void visit(const VarDeclaration &varDeclaration) = 0;
     virtual void visit(const Print &print) = 0;

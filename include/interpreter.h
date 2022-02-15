@@ -18,10 +18,39 @@ class Interpreter : public Expression::Visitor, public Statement::Visitor
 {
 public:
     //---------------------------------------------------------------------------
+    // MiniParse::Interpreter::Environment
+    //---------------------------------------------------------------------------
+    class Environment
+    {
+    public:
+        Environment(Environment *enclosing = nullptr)
+        :   m_Enclosing(enclosing)
+        {
+        }
+
+        // **TODO** type
+        void define(const Token &name, Token::LiteralValue value);
+
+        // **TODO** type
+        void assign(const Token &name, Token::LiteralValue value, Token::Type op);
+
+        // **TODO** type
+        Token::LiteralValue get(const Token &name) const;
+
+    private:
+        Environment *m_Enclosing;
+        std::unordered_map<std::string_view, Token::LiteralValue> m_Values;
+    };
+
+    Interpreter()
+    :   m_Environment(nullptr)
+    {
+    }
+    //---------------------------------------------------------------------------
     // Public API
     //---------------------------------------------------------------------------
     Token::LiteralValue evaluate(const Expression::Base *expression);
-    void interpret(const std::vector<std::unique_ptr<const Statement::Base>> &statements);
+    void interpret(const std::vector<std::unique_ptr<const Statement::Base>> &statements, Environment &environment);
 
     //---------------------------------------------------------------------------
     // Expression::Visitor virtuals
@@ -36,35 +65,19 @@ public:
     //---------------------------------------------------------------------------
     // Statement::Visitor virtuals
     //---------------------------------------------------------------------------
+    virtual void visit(const Statement::Compound &compound) override;
     virtual void visit(const Statement::Expression &expression) override;
     virtual void visit(const Statement::VarDeclaration &varDeclaration) override;
     virtual void visit(const Statement::Print &print) override;
 
 private:
-    //---------------------------------------------------------------------------
-    // MiniParse::Interpreter::Environment
-    //---------------------------------------------------------------------------
-    class Environment
-    {
-    public:
-        // **TODO** type
-        void define(const Token &name, Token::LiteralValue value);
-
-        // **TODO** type
-        void assign(const Token &name, Token::LiteralValue value, Token::Type op);
-
-        // **TODO** type
-        Token::LiteralValue get(const Token &name) const;
-
-    private:
-        std::unordered_map<std::string_view, Token::LiteralValue> m_Values;
-    };
+   
 
     //---------------------------------------------------------------------------
     // Members
     //---------------------------------------------------------------------------
     Token::LiteralValue m_Value;
     
-    Environment m_Environment;
+    Environment *m_Environment;
 };
 }
