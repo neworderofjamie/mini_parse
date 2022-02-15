@@ -67,6 +67,7 @@ public:
     //---------------------------------------------------------------------------
     virtual void visit(const Statement::Compound &compound) override;
     virtual void visit(const Statement::Expression &expression) override;
+    virtual void visit(const Statement::If &ifStatement) override;
     virtual void visit(const Statement::VarDeclaration &varDeclaration) override;
     virtual void visit(const Statement::Print &print) override;
 

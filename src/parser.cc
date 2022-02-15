@@ -144,7 +144,8 @@ void synchronise(ParserState &parserState)
 
 // Forward declarations
 Expression::ExpressionPtr parseExpression(ParserState &parserState);
-std::unique_ptr<const Statement::Base> parseBlockItem(ParserState &parserState);
+Statement::StatementPtr parseBlockItem(ParserState &parserState);
+Statement::StatementPtr parseStatement(ParserState &parserState);
 
 // Helper to parse binary expressions
 // **THINK I think this COULD be variadic but not clear if that's a good idea or not
@@ -326,24 +327,6 @@ Expression::ExpressionPtr parseExpression(ParserState &parserState)
     return parseAssignment(parserState);
 }
 
-Statement::StatementPtr parseExpressionStatement(ParserState &parserState)
-{
-    //  expression-statement ::=
-    //      expression? ";"
-    auto expression = parseExpression(parserState);
-    
-    parserState.consume(Token::Type::SEMICOLON, "Expect ';' after expression");
-    return std::make_unique<const Statement::Expression>(std::move(expression));
-}
-
-Statement::StatementPtr parsePrintStatement(ParserState &parserState)
-{
-    auto expression = parseExpression(parserState);
-
-    parserState.consume(Token::Type::SEMICOLON, "Expect ';' after expression");
-    return std::make_unique<const Statement::Print>(std::move(expression));
-}
-
 Statement::StatementPtr parseCompoundStatement(ParserState &parserState)
 {
     // compound-statement ::=
@@ -363,6 +346,46 @@ Statement::StatementPtr parseCompoundStatement(ParserState &parserState)
     return std::make_unique<const Statement::Compound>(std::move(statements));
 }
 
+Statement::StatementPtr parseExpressionStatement(ParserState &parserState)
+{
+    //  expression-statement ::=
+    //      expression? ";"
+    auto expression = parseExpression(parserState);
+    
+    parserState.consume(Token::Type::SEMICOLON, "Expect ';' after expression");
+    return std::make_unique<const Statement::Expression>(std::move(expression));
+}
+
+Statement::StatementPtr parsePrintStatement(ParserState &parserState)
+{
+    auto expression = parseExpression(parserState);
+
+    parserState.consume(Token::Type::SEMICOLON, "Expect ';' after expression");
+    return std::make_unique<const Statement::Print>(std::move(expression));
+}
+
+Statement::StatementPtr parseSelectionStatement(ParserState &parserState)
+{
+    // selection-statement ::=
+    //      "if" "(" expression ")" statement
+    //      "if" "(" expression ")" statement "else" statement
+    //      "switch" "(" expression ")" statement           // **TODO**
+
+    parserState.consume(Token::Type::LEFT_PAREN, "Expect '(' after 'if'");
+    auto condition = parseExpression(parserState);
+    parserState.consume(Token::Type::RIGHT_PAREN, "Expect ')' after 'if'");
+
+    auto thenBranch = parseStatement(parserState);
+    Statement::StatementPtr elseBranch;
+    if(parserState.match(Token::Type::ELSE)) {
+        elseBranch = parseStatement(parserState);
+    }
+
+    return std::make_unique<const Statement::If>(std::move(condition), 
+                                                 std::move(thenBranch), 
+                                                 std::move(elseBranch));
+}
+
 Statement::StatementPtr parseStatement(ParserState &parserState)
 {
     // statement ::=
@@ -370,11 +393,14 @@ Statement::StatementPtr parseStatement(ParserState &parserState)
     //      compound-statement
     //      expression-statement
     //      print-statement         // **TEMP**
-    //      selection-statement     // **TODO**
+    //      selection-statement     
     //      iteration-statement     // **TODO**
     //      jump-statement          // **TODO**
     if(parserState.match(Token::Type::PRINT)) {
         return parsePrintStatement(parserState);
+    }
+    else if(parserState.match(Token::Type::IF)) {
+        return parseSelectionStatement(parserState);
     }
     else if(parserState.match(Token::Type::LEFT_BRACE)) {
         return parseCompoundStatement(parserState);

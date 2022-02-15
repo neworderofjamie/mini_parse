@@ -129,7 +129,7 @@ int main()
             "y *= 2;\n"
             "print y;\n"
             "print 100;\n"
-            "print true;\n", errorHandler);*/
+            "print true;\n", errorHandler);
         const auto tokens = MiniParse::Scanner::scanSource(
             "int x = 4;\n"
             "print x;\n"
@@ -138,7 +138,18 @@ int main()
             "    print x;\n"
             "}\n"
             "print x;\n"
-            "print y;\n", errorHandler);
+            "print y;\n", errorHandler);*/
+        const auto tokens = MiniParse::Scanner::scanSource(
+            "int x = 12;\n"
+            "if(x < 5) {\n"
+            "    print 1;\n"
+            "}\n"
+            "else if(x < 10) {\n"
+            "   print 2;\n"
+            "}\n"
+            "else {"
+            "    print 0;\n"
+            "}\n", errorHandler);
         // Parse
         auto statements = MiniParse::Parser::parseStatements(tokens, errorHandler);
         

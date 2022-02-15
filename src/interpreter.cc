@@ -15,6 +15,21 @@
 #include "utils.h"
 
 //---------------------------------------------------------------------------
+// Anonymous namespace
+//---------------------------------------------------------------------------
+namespace
+{
+bool isTruthy(MiniParse::Token::LiteralValue value)
+{
+    return std::visit(
+        MiniParse::Utils::Overload{
+            [](auto x) { return static_cast<bool>(x); },
+            [](std::monostate) { return false; }},
+        value);
+}
+}
+
+//---------------------------------------------------------------------------
 // MiniParse::Interpreter::Environment
 //---------------------------------------------------------------------------
 namespace MiniParse
@@ -248,6 +263,16 @@ void Interpreter::visit(const Statement::Compound &compound)
 void Interpreter::visit(const Statement::Expression &expression)
 {
     evaluate(expression.getExpression());
+}
+//---------------------------------------------------------------------------
+void Interpreter::visit(const Statement::If &ifStatement)
+{
+    if(isTruthy(evaluate(ifStatement.getCondition()))) {
+        ifStatement.getThenBranch()->accept(*this);
+    }
+    else if(ifStatement.getElseBranch() != nullptr) {
+        ifStatement.getElseBranch()->accept(*this);
+    }
 }
 //---------------------------------------------------------------------------
 void Interpreter::visit(const Statement::VarDeclaration &varDeclaration)

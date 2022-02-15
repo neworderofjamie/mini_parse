@@ -63,6 +63,28 @@ private:
 };
 
 //---------------------------------------------------------------------------
+// MiniParse::Statement::If
+//---------------------------------------------------------------------------
+class If : public Base
+{
+public:
+    If(MiniParse::Expression::ExpressionPtr condition, StatementPtr thenBranch, StatementPtr elseBranch)
+    :  m_Condition(std::move(condition)), m_ThenBranch(std::move(thenBranch)), m_ElseBranch(std::move(elseBranch))
+    {}
+
+    virtual void accept(Visitor &visitor) const override;
+
+    const MiniParse::Expression::Base *getCondition() const { return m_Condition.get(); }
+    const Base *getThenBranch() const { return m_ThenBranch.get(); }
+    const Base *getElseBranch() const { return m_ElseBranch.get(); }
+
+private:
+    const MiniParse::Expression::ExpressionPtr m_Condition;
+    const StatementPtr m_ThenBranch;
+    const StatementPtr m_ElseBranch;
+};
+
+//---------------------------------------------------------------------------
 // MiniParse::Statement::VarDeclaration
 //---------------------------------------------------------------------------
 class VarDeclaration : public Base
@@ -111,6 +133,7 @@ class Visitor
 public:
     virtual void visit(const Compound& compound) = 0;
     virtual void visit(const Expression &expression) = 0;
+    virtual void visit(const If &ifStatement) = 0;
     virtual void visit(const VarDeclaration &varDeclaration) = 0;
     virtual void visit(const Print &print) = 0;
 };
