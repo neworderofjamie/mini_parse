@@ -29,6 +29,7 @@ struct Token
         LESS, LESS_EQUAL,
         EQUAL, STAR_EQUAL, SLASH_EQUAL, PERCENT_EQUAL, PLUS_EQUAL,
         MINUS_EQUAL, AMPERSAND_EQUAL, CARET_EQUAL, PIPE_EQUAL,
+        PIPE_PIPE, AMPERSAND_AMPERSAND,
         // **TODO** <<= and >>=
 
         // Literals   

@@ -342,10 +342,36 @@ void scanToken(ScanState &scanState, std::vector<Token> &tokens)
         //case '/': emplaceToken(tokens, scanState.match('=') ? Token::Type::SLASH_EQUAL : Token::Type::SLASH, scanState); break;
         case '%': emplaceToken(tokens, scanState.match('=') ? Token::Type::PERCENT_EQUAL : Token::Type::PERCENT, scanState); break;
         case '+': emplaceToken(tokens, scanState.match('=') ? Token::Type::PLUS_EQUAL : Token::Type::PLUS, scanState); break;
-        case '-': emplaceToken(tokens, scanState.match('=') ? Token::Type::MINUS_EQUAL : Token::Type::MINUS, scanState); break;
-        case '&': emplaceToken(tokens, scanState.match('=') ? Token::Type::AMPERSAND_EQUAL : Token::Type::AMPERSAND, scanState); break;
+        case '-': emplaceToken(tokens, scanState.match('=') ? Token::Type::MINUS_EQUAL : Token::Type::MINUS, scanState); break;        
         case '^': emplaceToken(tokens, scanState.match('=') ? Token::Type::CARET_EQUAL : Token::Type::CARET, scanState); break;
-        case '|': emplaceToken(tokens, scanState.match('=') ? Token::Type::PIPE_EQUAL : Token::Type::PIPE, scanState); break;
+        
+        case '&': 
+        {
+            if(scanState.match('=')) {
+                emplaceToken(tokens, Token::Type::AMPERSAND_EQUAL, scanState);
+            }
+            else if(scanState.match('&')) {
+                emplaceToken(tokens, Token::Type::AMPERSAND_AMPERSAND, scanState);
+            }
+            else {
+                emplaceToken(tokens, Token::Type::AMPERSAND, scanState);
+            }
+            break;
+        }
+
+        case '|': 
+        {
+            if(scanState.match('=')) {
+                emplaceToken(tokens, Token::Type::PIPE_EQUAL, scanState);
+            }
+            else if(scanState.match('|')) {
+                emplaceToken(tokens, Token::Type::PIPE_PIPE, scanState);
+            }
+            else {
+                emplaceToken(tokens, Token::Type::PIPE, scanState);
+            }
+            break;
+        }
         
         case '/':
         {

@@ -285,12 +285,42 @@ Expression::ExpressionPtr parseEquality(ParserState &parserState)
                        {Token::Type::NOT_EQUAL, Token::Type::EQUAL_EQUAL});
 }
 
+Expression::ExpressionPtr parseLogicalAnd(ParserState &parserState)
+{
+    // logical-AND-expression ::=
+    //      inclusive-OR-expression
+    //      logical-AND-expression "&&" inclusive-OR-expression
+    auto expression = parseEquality(parserState);
+
+    while(parserState.match(Token::Type::AMPERSAND_AMPERSAND)) {
+        Token op = parserState.previous();
+        auto right = parseEquality(parserState);
+        expression = std::make_unique<Expression::Logical>(std::move(expression), op, std::move(right));
+    }
+    return expression;
+}
+
+Expression::ExpressionPtr parseLogicalOr(ParserState &parserState)
+{
+    // logical-OR-expression ::=
+    //      logical-AND-expression
+    //      logical-OR-expression "||" logical-AND-expression
+    auto expression = parseLogicalAnd(parserState);
+
+    while(parserState.match(Token::Type::PIPE_PIPE)) {
+        Token op = parserState.previous();
+        auto right = parseLogicalAnd(parserState);
+        expression = std::make_unique<Expression::Logical>(std::move(expression), op, std::move(right));
+    }
+    return expression;
+}
+
 Expression::ExpressionPtr parseConditional(ParserState &parserState)
 {
     // conditional-expression ::=
     //      logical-OR-expression
     //      logical-OR-expression "?" expression ":" conditional-expression
-    return parseEquality(parserState);
+    return parseLogicalOr(parserState);
 }
 
 Expression::ExpressionPtr parseAssignment(ParserState &parserState)
@@ -312,7 +342,7 @@ Expression::ExpressionPtr parseAssignment(ParserState &parserState)
             return std::make_unique<Expression::Assignment>(expressionVariable->getName(), op.type, std::move(value));
         }
         else {
-            parserState.error(op, "Invalid assignement target");
+            parserState.error(op, "Invalid assignment target");
         }
     }
 

@@ -59,6 +59,7 @@ public:
     virtual void visit(const Expression::Binary &binary) override;
     virtual void visit(const Expression::Grouping &grouping) override;
     virtual void visit(const Expression::Literal &literal) override;
+    virtual void visit(const Expression::Logical &logical) override;
     virtual void visit(const Expression::Variable &variable) override;
     virtual void visit(const Expression::Unary &unary) override;
     

@@ -211,6 +211,26 @@ void Interpreter::visit(const Expression::Literal &literal)
     m_Value = literal.getValue();
 }
 //---------------------------------------------------------------------------
+void Interpreter::visit(const Expression::Logical &logical)
+{
+    auto leftValue = evaluate(logical.getLeft());
+
+    if(logical.getOperator().type == Token::Type::PIPE_PIPE) {
+        if(isTruthy(leftValue)) {
+            m_Value = 1;
+            return;
+        }
+    }
+    else {
+        if(!isTruthy(leftValue)) {
+            m_Value = 0;
+            return;
+        }
+    }
+
+    m_Value = (int)isTruthy(evaluate(logical.getRight()));
+}
+//---------------------------------------------------------------------------
 void Interpreter::visit(const Expression::Variable &variable)
 {
     m_Value = m_Environment->get(variable.getName());

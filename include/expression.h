@@ -104,6 +104,29 @@ private:
     const Token::LiteralValue m_Value;
 };
 
+
+//---------------------------------------------------------------------------
+// MiniParse::Expression::Logical
+//---------------------------------------------------------------------------
+class Logical : public Base
+{
+public:
+    Logical(ExpressionPtr left, Token op, ExpressionPtr right)
+    :  m_Left(std::move(left)), m_Operator(op), m_Right(std::move(right))
+    {}
+
+    virtual void accept(Visitor &visitor) const override;
+
+    const Base *getLeft() const { return m_Left.get(); }
+    const Token &getOperator() const { return m_Operator; }
+    const Base *getRight() const { return m_Right.get(); }
+
+private:
+    const ExpressionPtr m_Left;
+    const Token m_Operator;
+    const ExpressionPtr m_Right;
+};
+
 //---------------------------------------------------------------------------
 // MiniParse::Expression::Variable
 //---------------------------------------------------------------------------
@@ -153,6 +176,7 @@ public:
     virtual void visit(const Binary &binary) = 0;
     virtual void visit(const Grouping &grouping) = 0;
     virtual void visit(const Literal &literal) = 0;
+    virtual void visit(const Logical &logical) = 0;
     virtual void visit(const Variable &variable) = 0;
     virtual void visit(const Unary &unary) = 0;
 };

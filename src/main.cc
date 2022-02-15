@@ -149,7 +149,10 @@ int main()
             "}\n"
             "else {"
             "    print 0;\n"
-            "}\n", errorHandler);
+            "}\n"
+            "print 2 || 0;\n"
+            "print 6 && 0;\n"
+            "print 2 && 3;\n", errorHandler);
         // Parse
         auto statements = MiniParse::Parser::parseStatements(tokens, errorHandler);
         
