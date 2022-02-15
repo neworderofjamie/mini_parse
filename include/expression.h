@@ -30,19 +30,19 @@ typedef std::unique_ptr<Base const> ExpressionPtr;
 class Assignment : public Base
 {
 public:
-    Assignment(Token varName, Token::Type op, ExpressionPtr value)
+    Assignment(Token varName, Token op, ExpressionPtr value)
     :  m_VarName(varName), m_Operator(op), m_Value(std::move(value))
     {}
 
     virtual void accept(Visitor &visitor) const override;
 
     const Token &getVarName() const { return m_VarName; }
-    const Token::Type &getOperator() const { return m_Operator; }
+    const Token &getOperator() const { return m_Operator; }
     const Base *getValue() const { return m_Value.get(); }
 
 private:
     const Token m_VarName;
-    const Token::Type m_Operator;
+    const Token m_Operator;
     const ExpressionPtr m_Value;
 };
 

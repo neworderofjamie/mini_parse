@@ -328,8 +328,10 @@ void scanToken(ScanState &scanState, std::vector<Token> &tokens)
         case '}': emplaceToken(tokens, Token::Type::RIGHT_BRACE, scanState); break;
         case ',': emplaceToken(tokens, Token::Type::COMMA, scanState); break;
         case '.': emplaceToken(tokens, Token::Type::DOT, scanState); break;
+        case ':': emplaceToken(tokens, Token::Type::COLON, scanState); break;
         case ';': emplaceToken(tokens, Token::Type::SEMICOLON, scanState); break;
         case '~': emplaceToken(tokens, Token::Type::TILDA, scanState); break;
+        case '?': emplaceToken(tokens, Token::Type::QUESTION, scanState); break;
 
         // Operators
         case '!': emplaceToken(tokens, scanState.match('=') ? Token::Type::NOT_EQUAL : Token::Type::NOT, scanState); break;

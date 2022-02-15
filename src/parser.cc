@@ -290,6 +290,7 @@ Expression::ExpressionPtr parseLogicalAnd(ParserState &parserState)
     // logical-AND-expression ::=
     //      inclusive-OR-expression
     //      logical-AND-expression "&&" inclusive-OR-expression
+    // **THINK** parseLogicalAnd here (obviously) stack-overflows - why is this the grammar?
     auto expression = parseEquality(parserState);
 
     while(parserState.match(Token::Type::AMPERSAND_AMPERSAND)) {
@@ -305,6 +306,7 @@ Expression::ExpressionPtr parseLogicalOr(ParserState &parserState)
     // logical-OR-expression ::=
     //      logical-AND-expression
     //      logical-OR-expression "||" logical-AND-expression
+    // **THINK** parseLogicalOr here (obviously) stack-overflows - why is this the grammar?
     auto expression = parseLogicalAnd(parserState);
 
     while(parserState.match(Token::Type::PIPE_PIPE)) {
@@ -339,7 +341,7 @@ Expression::ExpressionPtr parseAssignment(ParserState &parserState)
         // **TODO** everything all the way up(?) from unary are l-value so can be used - not just variable
         auto expressionVariable = dynamic_cast<const Expression::Variable*>(expression.get());
         if(expressionVariable != nullptr) {
-            return std::make_unique<Expression::Assignment>(expressionVariable->getName(), op.type, std::move(value));
+            return std::make_unique<Expression::Assignment>(expressionVariable->getName(), op, std::move(value));
         }
         else {
             parserState.error(op, "Invalid assignment target");

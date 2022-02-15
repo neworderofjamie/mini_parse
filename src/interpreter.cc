@@ -144,7 +144,7 @@ void Interpreter::interpret(const Statement::StatementList &statements, Environm
 void Interpreter::visit(const Expression::Assignment &assignment)
 {
     auto value = evaluate(assignment.getValue());
-    m_Environment->assign(assignment.getVarName(), value, assignment.getOperator());
+    m_Environment->assign(assignment.getVarName(), value, assignment.getOperator().type);
 }
 //---------------------------------------------------------------------------
 void Interpreter::visit(const Expression::Binary &binary)
@@ -218,17 +218,21 @@ void Interpreter::visit(const Expression::Logical &logical)
     if(logical.getOperator().type == Token::Type::PIPE_PIPE) {
         if(isTruthy(leftValue)) {
             m_Value = 1;
-            return;
+        }
+        else {
+            m_Value = (int)isTruthy(evaluate(logical.getRight()));
         }
     }
     else {
         if(!isTruthy(leftValue)) {
             m_Value = 0;
-            return;
+        }
+        else {
+            m_Value = (int)isTruthy(evaluate(logical.getRight()));
         }
     }
 
-    m_Value = (int)isTruthy(evaluate(logical.getRight()));
+    
 }
 //---------------------------------------------------------------------------
 void Interpreter::visit(const Expression::Variable &variable)
