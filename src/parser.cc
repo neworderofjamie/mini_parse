@@ -156,7 +156,7 @@ const Expression::Base *parseExpression(ParserState &parserState);
 const Expression::Base *parsePrimary(ParserState &parserState)
 {
     // primary-expression ::=
-    //      identifier              **TODO** 
+    //      identifier
     //      constant
     //      "(" expression ")"
     if(parserState.match(Token::Type::FALSE)) {
@@ -187,8 +187,6 @@ const Expression::Base *parsePostfix(ParserState &parserState)
     //      primary-expression
     //      postfix-expression "[" expression "]"
     //      postfix-expression "(" argument-expression-list? ")"
-    //      postfix-expression "." identifier
-    //      postfix-expression "->" identifier
     //      postfix-expression "++"
     //      postfix-expression "--"
     //      "(" type-name ")" "{" initializer-list "}"
@@ -320,15 +318,50 @@ const Statement::Base *parseStatement(ParserState &parserState)
     }
 }
 
-const Statement::Base *parseVarDeclaration(ParserState &parserState)
+const Statement::Base *parseDeclaration(ParserState &parserState)
 {
-    // **TODO** think about relation to C99 grammar
-    
+    // declaration ::=
+    //      declaration-specifiers init-declarator-list? ";"
+
+    // declaration-specifiers ::=
+    //      declaration-specifiers?
+    //      type-specifier declaration-specifiers?
+    //      type-qualifier declaration-specifiers?
+
+    // type-specifier ::=
+    //      "char"
+    //      "short"
+    //      "int"
+    //      "long"
+    //      "float"
+    //      "double"
+    //      "signed"
+    //      "unsigned"
+    //      "bool"
+    //      typedef-name
+
+    // type-qualifier ::=
+    //      "const"
+
+    // **TODO** type specifier and qualifier in either order
     Token type = parserState.previous();
+
+
     Token name = parserState.consume(Token::Type::IDENTIFIER, "Expect variable name");
 
     const Expression::Base *initialiser = nullptr;
     if(parserState.match(Token::Type::EQUAL)) {
+        // init-declarator-list ::=
+        //      init-declarator
+        //      init-declarator-list "," init-declarator
+
+        // init-declarator ::=
+        //      declarator
+        //      declarator "=" assignment-expression
+
+        // declarator ::=
+        //      identifier
+        //      "(" declarator ")"
         initialiser = parseExpression(parserState);
     }
 
@@ -336,12 +369,15 @@ const Statement::Base *parseVarDeclaration(ParserState &parserState)
     return new Statement::VarDeclaration(type, name, initialiser);
 }
 
-const Statement::Base *parseDeclaration(ParserState &parserState)
+const Statement::Base *parseBlockItem(ParserState &parserState)
 {
-    // **TODO** think about relation to C99 grammar
+    // block-item ::=
+    //      declaration
+    //      statement
     try {
+        // **TODO** 
         if(parserState.match(Token::Type::TYPE_SPECIFIER)) {
-            return parseVarDeclaration(parserState);
+            return parseDeclaration(parserState);
         }
         else {
             return parseStatement(parserState);
