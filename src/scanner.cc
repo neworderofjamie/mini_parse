@@ -166,11 +166,7 @@ void scanNumber(char c, ScanState &scanState, std::vector<Token> &tokens)
         }
 
         // Read decimal place
-        bool isFloat = false;
-        if(scanState.peek() == '.') {
-            isFloat = true;
-            scanState.advance();
-        }
+        const bool isFloat = scanState.match('.');
 
         // Read hexadecimal digits
         while(std::isxdigit(scanState.peek())) {
@@ -198,8 +194,7 @@ void scanNumber(char c, ScanState &scanState, std::vector<Token> &tokens)
                 }
 
                 // If literal has floating point suffix
-                const char suffix = std::tolower(scanState.peek());
-                if(suffix == 'f') {
+                if(std::tolower(scanState.peek()) == 'f') {
                     // Add single-precision token
                     // **NOTE** skip 0x prefix
                     emplaceToken(tokens, Token::Type::NUMBER, scanState,
@@ -240,11 +235,7 @@ void scanNumber(char c, ScanState &scanState, std::vector<Token> &tokens)
         }
 
         // Read decimal place
-        bool isFloat = false;
-        if(scanState.peek() == '.') {
-            isFloat = true;
-            scanState.advance();
-        }
+        const bool isFloat = scanState.match('.');
 
         // Read digits
         while(std::isdigit(scanState.peek())) {
@@ -254,10 +245,7 @@ void scanNumber(char c, ScanState &scanState, std::vector<Token> &tokens)
         // If it's float
         if(isFloat) {
             // If there's an exponent
-            if(scanState.peek() != 'e') {
-                // Read e
-                scanState.advance();
-
+            if(scanState.match('e')) {
                 // Read sign
                 if(scanState.peek() == '-' || scanState.peek() == '+') {
                     scanState.advance();
@@ -267,23 +255,22 @@ void scanNumber(char c, ScanState &scanState, std::vector<Token> &tokens)
                 while(std::isdigit(scanState.peek())) {
                     scanState.advance();
                 }
+            }
+            
+            // If literal has floating point suffix
+            if(std::tolower(scanState.peek()) == 'f') {
+                // Add single-precision token
+                emplaceToken(tokens, Token::Type::NUMBER, scanState,
+                             toCharsThrow<float>(scanState.getLexeme()));
 
-                // If literal has floating point suffix
-                const char suffix = std::tolower(scanState.peek());
-                if(suffix == 'f') {
-                    // Add single-precision token
-                    emplaceToken(tokens, Token::Type::NUMBER, scanState,
-                                 toCharsThrow<float>(scanState.getLexeme()));
-
-                    // Advance
-                    // **NOTE** we do this AFTER parsing float as std::to_chars doesn't deal with suffixes
-                    scanState.advance();
-                }
-                // Otherwise, add double-precision token
-                else {
-                    emplaceToken(tokens, Token::Type::NUMBER, scanState,
-                                 toCharsThrow<double>(scanState.getLexeme()));
-                }
+                // Advance
+                // **NOTE** we do this AFTER parsing float as std::to_chars doesn't deal with suffixes
+                scanState.advance();
+            }
+            // Otherwise, add double-precision token
+            else {
+                emplaceToken(tokens, Token::Type::NUMBER, scanState,
+                             toCharsThrow<double>(scanState.getLexeme()));
             }
         }
         // Otherwise, number is integer
