@@ -28,6 +28,7 @@ const std::unordered_map<std::string_view, Token::Type> keywords{
     {"if", Token::Type::IF},
     {"true", Token::Type::TRUE},
     {"while", Token::Type::WHILE},
+    {"switch", Token::Type::SWITCH},
     {"print", Token::Type::PRINT},  // **HACK**
     {"char", Token::Type::TYPE_SPECIFIER},
     {"short", Token::Type::TYPE_SPECIFIER},
