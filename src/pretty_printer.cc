@@ -8,28 +8,52 @@
 //---------------------------------------------------------------------------
 namespace MiniParse
 {
-std::string PrettyPrinter::print(const Expression::Base &expression)
+std::string PrettyPrinter::print(const Statement::StatementList &statements)
 {
     // Clear string stream
     m_StringStream.str("");
 
-    // Visit parseExpression
-    expression.accept(*this);
-
+    for(auto &s : statements) {
+        s.get()->accept(*this);
+    }
+    
     // Return string stream contents
     return m_StringStream.str();
 }
 //---------------------------------------------------------------------------
+void PrettyPrinter::visit(const Expression::Assignment &assignement)
+{
+    m_StringStream << assignement.getVarName().lexeme << " " << assignement.getOperator().lexeme << " ";
+    assignement.getValue()->accept(*this);
+}
+//---------------------------------------------------------------------------
 void PrettyPrinter::visit(const Expression::Binary &binary)
 {
-    parenthesize(binary.getOperator().lexeme,
-                 {binary.getLeft(), binary.getRight()});
+    binary.getLeft()->accept(*this);
+    m_StringStream << " " << binary.getOperator().lexeme << " ";
+    binary.getRight()->accept(*this);
+}
+//---------------------------------------------------------------------------
+void PrettyPrinter::visit(const Expression::Call &call)
+{
+    call.getCallee()->accept(*this);
+    m_StringStream << "(";
+    for(const auto &a : call.getArguments()) {
+        a->accept(*this);
+    }
+    m_StringStream << ")";
+}
+//---------------------------------------------------------------------------
+void PrettyPrinter::visit(const Expression::Conditional &conditional)
+{
+
 }
 //---------------------------------------------------------------------------
 void PrettyPrinter::visit(const Expression::Grouping &grouping)
 {
-    parenthesize("group",
-                 {grouping.getExpression()});
+    m_StringStream << "(";
+    grouping.getExpression()->accept(*this);
+    m_StringStream << ")";
 }
 //---------------------------------------------------------------------------
 void PrettyPrinter::visit(const Expression::Literal &literal)
@@ -37,24 +61,114 @@ void PrettyPrinter::visit(const Expression::Literal &literal)
     std::visit(
         Utils::Overload{
             [this](auto x) { m_StringStream << x; },
-            [this](std::monostate) {m_StringStream << "invalid"; }},
+            [this](std::monostate) { m_StringStream << "invalid"; }},
         literal.getValue());
+}
+//---------------------------------------------------------------------------
+void PrettyPrinter::visit(const Expression::Logical &logical)
+{
+    logical.getLeft()->accept(*this);
+    m_StringStream << " " << logical.getOperator().lexeme << " ";
+    logical.getRight()->accept(*this);
+}
+//---------------------------------------------------------------------------
+void PrettyPrinter::visit(const Expression::Variable &variable)
+{
+    m_StringStream << variable.getName().lexeme;
 }
 //---------------------------------------------------------------------------
 void PrettyPrinter::visit(const Expression::Unary &unary)
 {
-    parenthesize(unary.getOperator().lexeme, {unary.getRight()});
+    m_StringStream << " " << unary.getOperator().lexeme << " ";
+    unary.getRight()->accept(*this);
 }
 //---------------------------------------------------------------------------
-void PrettyPrinter::parenthesize(std::string_view name, std::initializer_list<const Expression::Base *> expressions)
+void PrettyPrinter::visit(const Statement::Compound &compound)
 {
-    m_StringStream << "(" << name;
+    m_StringStream << "{" << std::endl;
+    for(auto &s : compound.getStatements()) {
+        s->accept(*this);
+        m_StringStream << std::endl;
+    }
+    m_StringStream << "}" << std::endl;
+}
+//---------------------------------------------------------------------------
+void PrettyPrinter::visit(const Statement::Do &doStatement)
+{
+    m_StringStream << "do";
+    doStatement.getBody()->accept(*this);
+    m_StringStream << "while(";
+    doStatement.getCondition()->accept(*this);
+    m_StringStream << ");" << std::endl;
+}
+//---------------------------------------------------------------------------
+void PrettyPrinter::visit(const Statement::Expression &expression)
+{
+    expression.getExpression()->accept(*this);
+    m_StringStream << ";";
+}
+//---------------------------------------------------------------------------
+void PrettyPrinter::visit(const Statement::For &forStatement)
+{
+    m_StringStream << "for(";
+    if(forStatement.getInitialiser()) {
+        forStatement.getInitialiser()->accept(*this);
+    }
+    m_StringStream << "; ";
 
-    for(auto e : expressions) {
-        m_StringStream << " ";
-        e->accept(*this);
+    if(forStatement.getCondition()) {
+        forStatement.getCondition()->accept(*this);
     }
 
+    m_StringStream << "; ";
+    if(forStatement.getIncrement()) {
+        forStatement.getIncrement()->accept(*this);
+    }
     m_StringStream << ")";
+    forStatement.getBody()->accept(*this);
+}
+//---------------------------------------------------------------------------
+void PrettyPrinter::visit(const Statement::If &ifStatement)
+{
+    m_StringStream << "if(";
+    ifStatement.getCondition()->accept(*this);
+    m_StringStream << ")" << std::endl;
+    ifStatement.getThenBranch()->accept(*this);
+    if(ifStatement.getElseBranch()) {
+        m_StringStream << "else" << std::endl;
+        ifStatement.getElseBranch()->accept(*this);
+    }
+}
+//---------------------------------------------------------------------------
+void PrettyPrinter::visit(const Statement::VarDeclaration &varDeclaration)
+{
+    for(const auto &var : varDeclaration.getDeclarationSpecifiers()) {
+         m_StringStream << var.lexeme << " ";
+    }
+
+    for(const auto &var : varDeclaration.getInitDeclaratorList()) {
+        m_StringStream << std::get<0>(var).lexeme;
+        if(std::get<1>(var) != nullptr) {
+            m_StringStream << " = ";
+            std::get<1>(var)->accept(*this);
+        }
+        m_StringStream << ", ";
+    }
+    m_StringStream << ";";
+}
+//---------------------------------------------------------------------------
+void PrettyPrinter::visit(const Statement::While &whileStatement)
+{
+    m_StringStream << "while(";
+    whileStatement.getCondition()->accept(*this);
+    m_StringStream << ")" << std::endl;
+    whileStatement.getBody()->accept(*this);
+}
+//---------------------------------------------------------------------------
+void PrettyPrinter::visit(const Statement::Print &print)
+{
+    m_StringStream << "print ";
+    print.getExpression()->accept(*this);
+    m_StringStream << ";";
 }
 }

@@ -162,16 +162,21 @@ int main()
             "    print x;\n"
             "}\n"
             "print x;\n"
-            "print y;\n", errorHandler);*/
+            "print y;\n", errorHandler);
         const auto tokens = MiniParse::Scanner::scanSource(
             "double x = 2.0f;\n"
             "print x;\n"
-            "print sqrt(x);\n", errorHandler);
+            "print sqrt(x);\n", errorHandler);*/
+        const auto tokens = MiniParse::Scanner::scanSource(
+            "for(float x = 0.0f; x < 10.0f; x = x + 1.0f) {\n"
+            "   print x;\n"
+            "   print sqrt(x);\n"
+            "}\n", errorHandler);
         // Parse
         auto statements = MiniParse::Parser::parseStatements(tokens, errorHandler);
         
-       //MiniParse::PrettyPrinter printer;
-        //std::cout << printer.print(*expression) << std::endl;
+        MiniParse::PrettyPrinter printer;
+        std::cout << printer.print(statements) << std::endl;
         Sqrt sqrt;
         MiniParse::Interpreter::Environment environment;
         environment.define("sqrt", sqrt);
