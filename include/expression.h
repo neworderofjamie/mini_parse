@@ -2,6 +2,7 @@
 
 // Standard C++ includes
 #include <memory>
+#include <vector>
 
 // Mini-parse includes
 #include "token.h"
@@ -23,6 +24,7 @@ struct Base
 };
 
 typedef std::unique_ptr<Base const> ExpressionPtr;
+typedef std::vector<ExpressionPtr> ExpressionList;
 
 //---------------------------------------------------------------------------
 // MiniParse::Expression::Assignment
@@ -66,6 +68,29 @@ private:
     const ExpressionPtr m_Left;
     const Token m_Operator;
     const ExpressionPtr m_Right;
+};
+
+
+//---------------------------------------------------------------------------
+// MiniParse::Expression::Call
+//---------------------------------------------------------------------------
+class Call : public Base
+{
+public:
+    Call(ExpressionPtr callee, Token closingParen, ExpressionList arguments)
+    :  m_Callee(std::move(callee)), m_ClosingParen(closingParen), m_Arguments(std::move(arguments))
+    {}
+
+    virtual void accept(Visitor &visitor) const override;
+
+    const Base *getCallee() const { return m_Callee.get(); }
+    const Token &getClosingParen() const { return m_ClosingParen; }
+    const ExpressionList &getArguments() const { return m_Arguments; }
+
+private:
+    const ExpressionPtr m_Callee;
+    const Token m_ClosingParen;
+    const ExpressionList m_Arguments;
 };
 
 //---------------------------------------------------------------------------
@@ -196,6 +221,7 @@ class Visitor
 public:
     virtual void visit(const Assignment &assignement) = 0;
     virtual void visit(const Binary &binary) = 0;
+    virtual void visit(const Call &call) = 0;
     virtual void visit(const Conditional &conditional) = 0;
     virtual void visit(const Grouping &grouping) = 0;
     virtual void visit(const Literal &literal) = 0;

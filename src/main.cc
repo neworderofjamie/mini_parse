@@ -2,7 +2,12 @@
 #include <iostream>
 #include <regex>
 #include <string>
+#include <variant>
 
+// Standard C includes
+#include <cmath>
+
+// Mini-parse includes
 #include "error_handler.h"
 #include "expression.h"
 #include "interpreter.h"
@@ -114,6 +119,25 @@ private:
     bool m_Error;
 };
 
+class Sqrt : public MiniParse::Interpreter::Callable
+{
+    using LiteralValue = MiniParse::Token::LiteralValue;
+public:
+    virtual size_t getArity() const final
+    {
+        return 1;
+    }
+
+    virtual LiteralValue call(const std::vector<LiteralValue> &arguments) final
+    {
+       return std::visit(
+            MiniParse::Utils::Overload{
+                [](auto v) { return LiteralValue{std::sqrt(v)}; },
+                [](std::monostate) { return LiteralValue(); }},
+            arguments[0]);
+    }
+};
+
 int main()
 {
     ErrorHandler errorHandler;
@@ -140,18 +164,17 @@ int main()
             "print x;\n"
             "print y;\n", errorHandler);*/
         const auto tokens = MiniParse::Scanner::scanSource(
-            "int x;\n"
-            "for(x = 0; x < 10; x = x + 1) {\n"
-            "   print x;\n"
-            "}\n"
-            "print x;\n", errorHandler);
+            "double x = 2.0f;\n"
+            "print x;\n"
+            "print sqrt(x);\n", errorHandler);
         // Parse
         auto statements = MiniParse::Parser::parseStatements(tokens, errorHandler);
         
        //MiniParse::PrettyPrinter printer;
         //std::cout << printer.print(*expression) << std::endl;
-
+        Sqrt sqrt;
         MiniParse::Interpreter::Environment environment;
+        environment.define("sqrt", sqrt);
         MiniParse::Interpreter interpreter;
         interpreter.interpret(statements, environment);
     }

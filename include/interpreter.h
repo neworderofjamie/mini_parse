@@ -18,6 +18,18 @@ class Interpreter : public Expression::Visitor, public Statement::Visitor
 {
 public:
     //---------------------------------------------------------------------------
+    // MiniParse::Interpreter::Callable
+    //---------------------------------------------------------------------------
+    class Callable
+    {
+    public:
+        virtual size_t getArity() const = 0;
+        virtual Token::LiteralValue call(const std::vector<Token::LiteralValue> &arguments) = 0;
+    };
+
+    typedef std::variant<Token::LiteralValue, std::reference_wrapper<Callable>> Value;
+
+    //---------------------------------------------------------------------------
     // MiniParse::Interpreter::Environment
     //---------------------------------------------------------------------------
     class Environment
@@ -32,14 +44,17 @@ public:
         void define(const Token &name, Token::LiteralValue value);
 
         // **TODO** type
+        void define(std::string_view name, Callable &callable);
+
+        // **TODO** type
         void assign(const Token &name, Token::LiteralValue value, Token::Type op);
 
         // **TODO** type
-        Token::LiteralValue get(const Token &name) const;
+        Value get(const Token &name) const;
 
     private:
         Environment *m_Enclosing;
-        std::unordered_map<std::string_view, Token::LiteralValue> m_Values;
+        std::unordered_map<std::string_view, Value> m_Values;
     };
 
     Interpreter()
@@ -57,6 +72,7 @@ public:
     //---------------------------------------------------------------------------
     virtual void visit(const Expression::Assignment &assignement) override;
     virtual void visit(const Expression::Binary &binary) override;
+    virtual void visit(const Expression::Call &call) override;
     virtual void visit(const Expression::Conditional &conditional) override;
     virtual void visit(const Expression::Grouping &grouping) override;
     virtual void visit(const Expression::Literal &literal) override;
@@ -82,7 +98,7 @@ private:
     //---------------------------------------------------------------------------
     // Members
     //---------------------------------------------------------------------------
-    Token::LiteralValue m_Value;
+    Value m_Value;
     
     Environment *m_Environment;
 };

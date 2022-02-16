@@ -143,6 +143,7 @@ void synchronise(ParserState &parserState)
 }
 
 // Forward declarations
+Expression::ExpressionPtr parseAssignment(ParserState &parserState);
 Expression::ExpressionPtr parseExpression(ParserState &parserState);
 Statement::StatementPtr parseBlockItem(ParserState &parserState);
 Statement::StatementPtr parseDeclaration(ParserState &parserState);
@@ -195,13 +196,42 @@ Expression::ExpressionPtr parsePostfix(ParserState &parserState)
 {
     // postfix-expression ::=
     //      primary-expression
-    //      postfix-expression "[" expression "]"
+    //      postfix-expression "[" expression "]"   // **TODO**
     //      postfix-expression "(" argument-expression-list? ")"
-    //      postfix-expression "++"
-    //      postfix-expression "--"
-    //      "(" type-name ")" "{" initializer-list "}"
-    //      "(" type-name ")" "{" initializer-list "," "}"
-    return parsePrimary(parserState);
+    //      postfix-expression "++"   // **TODO**
+    //      postfix-expression "--"   // **TODO**
+
+    // argument-expression-list ::=
+    //      assignment-expression
+    //      argument-expression-list "," assignment-expression
+
+    auto expression = parsePrimary(parserState);
+
+    while(true) {
+        // If this is a function call
+        if(parserState.match(Token::Type::LEFT_PAREN)) {
+            // Build list of arguments
+            Expression::ExpressionList arguments;
+            if(!parserState.check(Token::Type::RIGHT_PAREN)) {
+                do {
+                    arguments.emplace_back(parseAssignment(parserState));
+                } while(parserState.check(Token::Type::COMMA));
+            }
+
+            Token closingParen = parserState.consume(Token::Type::RIGHT_PAREN,
+                                                     "Expect ')' after arguments.");
+
+            // Create call expression
+            expression = std::make_unique<Expression::Call>(std::move(expression),
+                                                            closingParen,
+                                                            std::move(arguments));
+        }
+        else {
+            break;
+        }
+    }
+
+    return expression;
 }
 
 

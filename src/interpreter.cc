@@ -41,6 +41,13 @@ void Interpreter::Environment::define(const Token &name, Token::LiteralValue val
     }
 }
 //---------------------------------------------------------------------------
+void Interpreter::Environment::define(std::string_view name, Callable &callable)
+{
+    if(!m_Values.try_emplace(name, callable).second) {
+        throw std::runtime_error("Redeclaration of '" + std::string{name});
+    }
+}
+//---------------------------------------------------------------------------
 void Interpreter::Environment::assign(const Token &name, Token::LiteralValue value, Token::Type op)
 {
     auto variable = m_Values.find(name.lexeme);
@@ -53,7 +60,7 @@ void Interpreter::Environment::assign(const Token &name, Token::LiteralValue val
         }
     }
     else {
-        variable->second = std::visit(
+        std::get<Token::LiteralValue>(variable->second) = std::visit(
             Utils::Overload{
                 [op](auto variable, auto assign)
                 { 
@@ -102,11 +109,11 @@ void Interpreter::Environment::assign(const Token &name, Token::LiteralValue val
                     }
                 },
                 [](auto, std::monostate) { return MiniParse::Token::LiteralValue(); }},
-            variable->second, value);
+            std::get<Token::LiteralValue>(variable->second), value);
     }
 }
 //---------------------------------------------------------------------------
-Token::LiteralValue Interpreter::Environment::get(const Token &name) const
+Interpreter::Value Interpreter::Environment::get(const Token &name) const
 {
     auto val = m_Values.find(std::string{name.lexeme});
     if(val == m_Values.end()) {
@@ -128,7 +135,7 @@ Token::LiteralValue Interpreter::Environment::get(const Token &name) const
 Token::LiteralValue Interpreter::evaluate(const Expression::Base *expression)
 {
     expression->accept(*this);
-    return m_Value;
+    return std::get<Token::LiteralValue>(m_Value);
 }
 //---------------------------------------------------------------------------
 void Interpreter::interpret(const Statement::StatementList &statements, Environment &environment)
@@ -199,6 +206,29 @@ void Interpreter::visit(const Expression::Binary &binary)
             [](std::monostate, auto) { return MiniParse::Token::LiteralValue(); },
             [](auto, std::monostate) { return MiniParse::Token::LiteralValue(); }},
         leftValue, rightValue);
+}
+//---------------------------------------------------------------------------
+void Interpreter::visit(const Expression::Call &call)
+{
+    // Evaluate callee and extract callabale
+    // **NOTE** we can't call evaluate as that returns a value
+    call.getCallee()->accept(*this);
+    auto callable = std::get<std::reference_wrapper<Callable>>(m_Value);
+
+    // Evaluate arguments
+    std::vector<Token::LiteralValue> arguments;
+    for(const auto &arg : call.getArguments()) {
+        arguments.push_back(evaluate(arg.get()));
+    }
+
+    // If arguments count doesn't match, give error
+    if(arguments.size() != callable.get().getArity()) {
+        throw std::runtime_error("Expected " + std::to_string(callable.get().getArity()) + " arguments but got "
+                                 + std::to_string(arguments.size()) + " at line:" + std::to_string(call.getClosingParen().line));
+    }
+
+    // Call function and save result
+    m_Value = callable.get().call(arguments);
 }
 //---------------------------------------------------------------------------
 void Interpreter::visit(const Expression::Conditional &conditional)
@@ -350,7 +380,7 @@ void Interpreter::visit(const Statement::VarDeclaration &varDeclaration)
         Token::LiteralValue value;
         if(std::get<1>(var) != nullptr) {
             evaluate(std::get<1>(var).get());
-            value = m_Value;
+            value = std::get<Token::LiteralValue>(m_Value);
         }
         m_Environment->define(std::get<0>(var), value);
     }
