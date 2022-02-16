@@ -106,6 +106,28 @@ private:
     const InitDeclaratorList m_InitDeclaratorList;
 };
 
+
+//---------------------------------------------------------------------------
+// MiniParse::Statement::If
+//---------------------------------------------------------------------------
+class While : public Base
+{
+public:
+    While(MiniParse::Expression::ExpressionPtr condition, StatementPtr body)
+    :  m_Condition(std::move(condition)), m_Body(std::move(body))
+    {}
+
+    virtual void accept(Visitor &visitor) const override;
+
+    const MiniParse::Expression::Base *getCondition() const { return m_Condition.get(); }
+    const Base *getBody() const { return m_Body.get(); }
+
+private:
+    const MiniParse::Expression::ExpressionPtr m_Condition;
+    const StatementPtr m_Body;
+};
+
+
 //---------------------------------------------------------------------------
 // MiniParse::Statement::Print
 //---------------------------------------------------------------------------
@@ -135,6 +157,7 @@ public:
     virtual void visit(const Expression &expression) = 0;
     virtual void visit(const If &ifStatement) = 0;
     virtual void visit(const VarDeclaration &varDeclaration) = 0;
+    virtual void visit(const While &whileStatement) = 0;
     virtual void visit(const Print &print) = 0;
 };
 }   // namespace MiniParse::Statement

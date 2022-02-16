@@ -402,20 +402,52 @@ Statement::StatementPtr parseSelectionStatement(ParserState &parserState)
     //      "if" "(" expression ")" statement
     //      "if" "(" expression ")" statement "else" statement
     //      "switch" "(" expression ")" statement           // **TODO**
-
-    parserState.consume(Token::Type::LEFT_PAREN, "Expect '(' after 'if'");
+    const auto keyword = parserState.previous();
+    parserState.consume(Token::Type::LEFT_PAREN, "Expect '(' after '" + std::string{keyword.lexeme} + "'");
     auto condition = parseExpression(parserState);
-    parserState.consume(Token::Type::RIGHT_PAREN, "Expect ')' after 'if'");
+    parserState.consume(Token::Type::RIGHT_PAREN, "Expect ')' after '" + std::string{keyword.lexeme} + "'");
 
-    auto thenBranch = parseStatement(parserState);
-    Statement::StatementPtr elseBranch;
-    if(parserState.match(Token::Type::ELSE)) {
-        elseBranch = parseStatement(parserState);
+    // If this is an if statement
+    if(keyword.type == Token::Type::IF) {
+        auto thenBranch = parseStatement(parserState);
+        Statement::StatementPtr elseBranch;
+        if(parserState.match(Token::Type::ELSE)) {
+            elseBranch = parseStatement(parserState);
+        }
+
+        return std::make_unique<Statement::If>(std::move(condition),
+                                               std::move(thenBranch),
+                                               std::move(elseBranch));
     }
+    // Otherwise (switch statment)
+    else {
+        assert(false);
+        return nullptr;
+    }
+}
 
-    return std::make_unique<Statement::If>(std::move(condition), 
-                                           std::move(thenBranch), 
-                                           std::move(elseBranch));
+Statement::StatementPtr parseIterationStatement(ParserState &parserState)
+{
+    // iteration-statement ::=
+    //      "while" "(" expression ")" statement
+    //      "do" statement "while" "(" expression ")" ";"                           // **TODO**
+    //      "for" "(" expression? ";" expression? ";" expression? ")" statement     // **TODO**
+    //      "for" "(" declaration expression? ";" expression? ")" statement         // **TODO**
+
+    // If this is a while statement
+    if(parserState.previous().type == Token::Type::WHILE) {
+        parserState.consume(Token::Type::LEFT_PAREN, "Expect '(' after 'while'");
+        auto condition = parseExpression(parserState);
+        parserState.consume(Token::Type::RIGHT_PAREN, "Expect ')' after 'while'");
+        auto body = parseStatement(parserState);
+
+        return std::make_unique<Statement::While>(std::move(condition), 
+                                                  std::move(body));
+    }
+    else {
+        assert(false);
+        return nullptr;
+    }
 }
 
 Statement::StatementPtr parseStatement(ParserState &parserState)
@@ -426,13 +458,16 @@ Statement::StatementPtr parseStatement(ParserState &parserState)
     //      expression-statement
     //      print-statement         // **TEMP**
     //      selection-statement     
-    //      iteration-statement     // **TODO**
+    //      iteration-statement
     //      jump-statement          // **TODO**
     if(parserState.match(Token::Type::PRINT)) {
         return parsePrintStatement(parserState);
     }
-    else if(parserState.match(Token::Type::IF)) {
+    else if(parserState.match({Token::Type::IF, Token::Type::SWITCH})) {
         return parseSelectionStatement(parserState);
+    }
+    else if(parserState.match({Token::Type::FOR, Token::Type::WHILE, Token::Type::DO})) {
+        return parseIterationStatement(parserState);
     }
     else if(parserState.match(Token::Type::LEFT_BRACE)) {
         return parseCompoundStatement(parserState);

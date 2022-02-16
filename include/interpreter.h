@@ -57,6 +57,7 @@ public:
     //---------------------------------------------------------------------------
     virtual void visit(const Expression::Assignment &assignement) override;
     virtual void visit(const Expression::Binary &binary) override;
+    virtual void visit(const Expression::Conditional &conditional) override;
     virtual void visit(const Expression::Grouping &grouping) override;
     virtual void visit(const Expression::Literal &literal) override;
     virtual void visit(const Expression::Logical &logical) override;
@@ -70,6 +71,7 @@ public:
     virtual void visit(const Statement::Expression &expression) override;
     virtual void visit(const Statement::If &ifStatement) override;
     virtual void visit(const Statement::VarDeclaration &varDeclaration) override;
+    virtual void visit(const Statement::While &whileStatement) override;
     virtual void visit(const Statement::Print &print) override;
 
 private:

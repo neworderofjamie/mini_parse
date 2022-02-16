@@ -201,6 +201,18 @@ void Interpreter::visit(const Expression::Binary &binary)
         leftValue, rightValue);
 }
 //---------------------------------------------------------------------------
+void Interpreter::visit(const Expression::Conditional &conditional)
+{
+    auto conditionValue = evaluate(conditional.getCondition());
+
+    if(isTruthy(conditionValue)) {
+        m_Value = evaluate(conditional.getTrue());
+    }
+    else {
+        m_Value = evaluate(conditional.getFalse());
+    }
+}
+//---------------------------------------------------------------------------
 void Interpreter::visit(const Expression::Grouping &grouping)
 {
     evaluate(grouping.getExpression());
@@ -231,8 +243,6 @@ void Interpreter::visit(const Expression::Logical &logical)
             m_Value = (int)isTruthy(evaluate(logical.getRight()));
         }
     }
-
-    
 }
 //---------------------------------------------------------------------------
 void Interpreter::visit(const Expression::Variable &variable)
@@ -309,6 +319,13 @@ void Interpreter::visit(const Statement::VarDeclaration &varDeclaration)
             value = m_Value;
         }
         m_Environment->define(std::get<0>(var), value);
+    }
+}
+//---------------------------------------------------------------------------
+void Interpreter::visit(const Statement::While &whileStatement)
+{
+    while(isTruthy(evaluate(whileStatement.getCondition()))) {
+        whileStatement.getBody()->accept(*this);
     }
 }
 //---------------------------------------------------------------------------

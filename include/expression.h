@@ -69,6 +69,28 @@ private:
 };
 
 //---------------------------------------------------------------------------
+// MiniParse::Expression::Conditional
+//---------------------------------------------------------------------------
+class Conditional : public Base
+{
+public:
+    Conditional(ExpressionPtr condition, ExpressionPtr trueExpression, ExpressionPtr falseExpression)
+    :  m_Condition(std::move(condition)), m_True(std::move(trueExpression)), m_False(std::move(falseExpression))
+    {}
+
+    virtual void accept(Visitor &visitor) const override;
+
+    const Base *getCondition() const { return m_Condition.get(); }
+    const Base *getTrue() const { return m_True.get(); }
+    const Base *getFalse() const { return m_False.get(); }
+
+private:
+    const ExpressionPtr m_Condition;
+    const ExpressionPtr m_True;
+    const ExpressionPtr m_False;
+};
+
+//---------------------------------------------------------------------------
 // MiniParse::Expression::Grouping
 //---------------------------------------------------------------------------
 class Grouping : public Base
@@ -174,6 +196,7 @@ class Visitor
 public:
     virtual void visit(const Assignment &assignement) = 0;
     virtual void visit(const Binary &binary) = 0;
+    virtual void visit(const Conditional &conditional) = 0;
     virtual void visit(const Grouping &grouping) = 0;
     virtual void visit(const Literal &literal) = 0;
     virtual void visit(const Logical &logical) = 0;
