@@ -224,7 +224,7 @@ void scanNumber(char c, ScanState &scanState, std::vector<Token> &tokens)
         }
     }
     // Otherwise, if this is an octal integer
-    else if(c == '0' && isodigit(scanState.peekNext())){
+    else if(c == '0' && isodigit(scanState.peek())){
         scanState.error("Octal literals unsupported.");
     }
     // Otherwise, if it's decimal
