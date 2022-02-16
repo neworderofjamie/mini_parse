@@ -104,6 +104,32 @@ private:
     const StatementPtr m_ElseBranch;
 };
 
+
+//---------------------------------------------------------------------------
+// MiniParse::Statement::For
+//---------------------------------------------------------------------------
+class For : public Base
+{
+public:
+    For(StatementPtr initialiser, MiniParse::Expression::ExpressionPtr condition, MiniParse::Expression::ExpressionPtr increment, StatementPtr body)
+    :  m_Initialiser(std::move(initialiser)), m_Condition(std::move(condition)), m_Increment(std::move(increment)), m_Body(std::move(body))
+    {}
+
+    virtual void accept(Visitor &visitor) const override;
+
+    const Base *getInitialiser() const { return m_Initialiser.get(); }
+    const MiniParse::Expression::Base *getCondition() const { return m_Condition.get(); }
+    const MiniParse::Expression::Base *getIncrement() const { return m_Increment.get(); }
+    const Base *getBody() const { return m_Body.get(); }
+
+private:
+    const StatementPtr m_Initialiser;
+    const MiniParse::Expression::ExpressionPtr m_Condition;
+    const MiniParse::Expression::ExpressionPtr m_Increment;
+    const StatementPtr m_Body;
+};
+
+
 //---------------------------------------------------------------------------
 // MiniParse::Statement::VarDeclaration
 //---------------------------------------------------------------------------
@@ -174,6 +200,7 @@ public:
     virtual void visit(const Compound &compound) = 0;
     virtual void visit(const Do &doStatement) = 0;
     virtual void visit(const Expression &expression) = 0;
+    virtual void visit(const For &forStatement) = 0;
     virtual void visit(const If &ifStatement) = 0;
     virtual void visit(const VarDeclaration &varDeclaration) = 0;
     virtual void visit(const While &whileStatement) = 0;

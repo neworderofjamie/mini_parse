@@ -145,6 +145,7 @@ void synchronise(ParserState &parserState)
 // Forward declarations
 Expression::ExpressionPtr parseExpression(ParserState &parserState);
 Statement::StatementPtr parseBlockItem(ParserState &parserState);
+Statement::StatementPtr parseDeclaration(ParserState &parserState);
 Statement::StatementPtr parseStatement(ParserState &parserState);
 
 // Helper to parse binary expressions
@@ -431,8 +432,8 @@ Statement::StatementPtr parseIterationStatement(ParserState &parserState)
     // iteration-statement ::=
     //      "while" "(" expression ")" statement
     //      "do" statement "while" "(" expression ")" ";"
-    //      "for" "(" expression? ";" expression? ";" expression? ")" statement     // **TODO**
-    //      "for" "(" declaration expression? ";" expression? ")" statement         // **TODO**
+    //      "for" "(" expression? ";" expression? ";" expression? ")" statement
+    //      "for" "(" declaration expression? ";" expression? ")" statement
 
     // If this is a while statement
     if(parserState.previous().type == Token::Type::WHILE) {
@@ -455,9 +456,46 @@ Statement::StatementPtr parseIterationStatement(ParserState &parserState)
         return std::make_unique<Statement::Do>(std::move(condition), 
                                                std::move(body));
     }
+    // Otherwise, it's a for statement
     else {
-        assert(false);
-        return nullptr;
+        parserState.consume(Token::Type::LEFT_PAREN, "Expect '(' after 'for'");
+
+        // If statement starts with a semicolon - no initialiser
+        Statement::StatementPtr initialiser;
+        if(parserState.match(Token::Type::SEMICOLON)) {
+            initialiser = nullptr;
+        }
+        // Otherwise, if it starts with a declaration
+        else if(parserState.match({Token::Type::TYPE_SPECIFIER, Token::Type::TYPE_QUALIFIER})) {
+            initialiser = parseDeclaration(parserState);
+        }
+        // Otherwise, must be expression (statement consumes semicolon)
+        else {
+            initialiser = parseExpressionStatement(parserState);
+        }
+
+        // Parse condition
+        Expression::ExpressionPtr condition = nullptr;
+        if(!parserState.check(Token::Type::SEMICOLON)) {
+            condition = parseExpression(parserState);
+        }
+        parserState.consume(Token::Type::SEMICOLON, "Expect ';' after loop condition");
+
+        // Parse increment
+        Expression::ExpressionPtr increment = nullptr;
+        if(!parserState.check(Token::Type::RIGHT_PAREN)) {
+            increment = parseExpression(parserState);
+        }
+        parserState.consume(Token::Type::RIGHT_PAREN, "Expect ')' after for clauses");
+
+        Statement::StatementPtr body = parseStatement(parserState);
+
+        // Return for statement
+        // **NOTE** we could "de-sugar" into a while statement but this makes pretty-printing easier
+        return std::make_unique<Statement::For>(std::move(initialiser), 
+                                                std::move(condition),
+                                                std::move(increment),
+                                                std::move(body));
     }
 }
 

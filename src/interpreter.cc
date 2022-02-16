@@ -306,6 +306,33 @@ void Interpreter::visit(const Statement::Expression &expression)
     evaluate(expression.getExpression());
 }
 //---------------------------------------------------------------------------
+void Interpreter::visit(const Statement::For &forStatement)
+{
+    // Create new environment for loop initialisation
+    Environment *previous = m_Environment;
+    Environment environment(m_Environment);
+    m_Environment = &environment;
+
+    // Interpret initialiser if statement present
+    if(forStatement.getInitialiser()) {
+        forStatement.getInitialiser()->accept(*this);
+    }
+
+    // While condition is true
+    while(isTruthy(evaluate(forStatement.getCondition()))) {
+        // Interpret body
+        forStatement.getBody()->accept(*this);
+
+        // Interpret incrementer if present
+        if(forStatement.getIncrement()) {
+            forStatement.getIncrement()->accept(*this);
+        }
+    }
+
+    // Restore environment
+    m_Environment = previous;
+}
+//---------------------------------------------------------------------------
 void Interpreter::visit(const Statement::If &ifStatement)
 {
     if(isTruthy(evaluate(ifStatement.getCondition()))) {
