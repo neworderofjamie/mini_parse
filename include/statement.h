@@ -45,6 +45,26 @@ private:
 };
 
 //---------------------------------------------------------------------------
+// MiniParse::Statement::Do
+//---------------------------------------------------------------------------
+class Do : public Base
+{
+public:
+    Do(MiniParse::Expression::ExpressionPtr condition, StatementPtr body)
+    :  m_Condition(std::move(condition)), m_Body(std::move(body))
+    {}
+
+    virtual void accept(Visitor &visitor) const override;
+
+    const MiniParse::Expression::Base *getCondition() const { return m_Condition.get(); }
+    const Base *getBody() const { return m_Body.get(); }
+
+private:
+    const MiniParse::Expression::ExpressionPtr m_Condition;
+    const StatementPtr m_Body;
+};
+
+//---------------------------------------------------------------------------
 // MiniParse::Statement::Expression
 //---------------------------------------------------------------------------
 class Expression : public Base
@@ -106,7 +126,6 @@ private:
     const InitDeclaratorList m_InitDeclaratorList;
 };
 
-
 //---------------------------------------------------------------------------
 // MiniParse::Statement::If
 //---------------------------------------------------------------------------
@@ -126,7 +145,6 @@ private:
     const MiniParse::Expression::ExpressionPtr m_Condition;
     const StatementPtr m_Body;
 };
-
 
 //---------------------------------------------------------------------------
 // MiniParse::Statement::Print
@@ -153,7 +171,8 @@ private:
 class Visitor
 {
 public:
-    virtual void visit(const Compound& compound) = 0;
+    virtual void visit(const Compound &compound) = 0;
+    virtual void visit(const Do &doStatement) = 0;
     virtual void visit(const Expression &expression) = 0;
     virtual void visit(const If &ifStatement) = 0;
     virtual void visit(const VarDeclaration &varDeclaration) = 0;

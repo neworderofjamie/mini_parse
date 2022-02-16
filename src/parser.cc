@@ -430,7 +430,7 @@ Statement::StatementPtr parseIterationStatement(ParserState &parserState)
 {
     // iteration-statement ::=
     //      "while" "(" expression ")" statement
-    //      "do" statement "while" "(" expression ")" ";"                           // **TODO**
+    //      "do" statement "while" "(" expression ")" ";"
     //      "for" "(" expression? ";" expression? ";" expression? ")" statement     // **TODO**
     //      "for" "(" declaration expression? ";" expression? ")" statement         // **TODO**
 
@@ -443,6 +443,17 @@ Statement::StatementPtr parseIterationStatement(ParserState &parserState)
 
         return std::make_unique<Statement::While>(std::move(condition), 
                                                   std::move(body));
+    }
+    // Otherwise, if this is a do statement 
+    else if(parserState.previous().type == Token::Type::DO) {
+        auto body = parseStatement(parserState);
+        parserState.consume(Token::Type::WHILE, "Expected 'while' after 'do' statement body");
+        parserState.consume(Token::Type::LEFT_PAREN, "Expect '(' after 'while'");
+        auto condition = parseExpression(parserState);
+        parserState.consume(Token::Type::RIGHT_PAREN, "Expect ')' after 'while'");
+        parserState.consume(Token::Type::SEMICOLON, "Expect ';' after while");
+        return std::make_unique<Statement::Do>(std::move(condition), 
+                                               std::move(body));
     }
     else {
         assert(false);

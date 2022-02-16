@@ -294,6 +294,13 @@ void Interpreter::visit(const Statement::Compound &compound)
     interpret(compound.getStatements(), environment);
 }
 //---------------------------------------------------------------------------
+void Interpreter::visit(const Statement::Do &doStatement)
+{
+    do {
+        doStatement.getBody()->accept(*this);
+    } while(isTruthy(evaluate(doStatement.getCondition())));
+}
+//---------------------------------------------------------------------------
 void Interpreter::visit(const Statement::Expression &expression)
 {
     evaluate(expression.getExpression());

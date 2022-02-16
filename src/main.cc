@@ -140,11 +140,16 @@ int main()
             "print x;\n"
             "print y;\n", errorHandler);*/
         const auto tokens = MiniParse::Scanner::scanSource(
-            "int x = 0;"
+            "int x = 0;\n"
             "while(x < 10) {\n"
             "   print x;\n"
-            "   x=x+1;\n"
-            "}\n", errorHandler);
+            "   x = x + 1;\n"
+            "}\n"
+            "int y = 0;\n"
+            "do {\n"
+            "   print y;\n"
+            "   y = y + 1;\n"
+            "} while(y < 10);\n", errorHandler);
         // Parse
         auto statements = MiniParse::Parser::parseStatements(tokens, errorHandler);
         

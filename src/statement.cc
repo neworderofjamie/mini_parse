@@ -8,6 +8,7 @@
 
 // Implement accept methods
 IMPLEMENT_ACCEPT(Compound)
+IMPLEMENT_ACCEPT(Do)
 IMPLEMENT_ACCEPT(Expression)
 IMPLEMENT_ACCEPT(If)
 IMPLEMENT_ACCEPT(VarDeclaration)
