@@ -114,7 +114,10 @@ void PrettyPrinter::visit(const Statement::For &forStatement)
     if(forStatement.getInitialiser()) {
         forStatement.getInitialiser()->accept(*this);
     }
-    m_StringStream << "; ";
+    else {
+        m_StringStream << ";";
+    }
+    m_StringStream << " ";
 
     if(forStatement.getCondition()) {
         forStatement.getCondition()->accept(*this);
