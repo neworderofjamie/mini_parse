@@ -54,6 +54,35 @@ IMPLEMENT_TYPE(Uint16);
 IMPLEMENT_TYPE(Uint32);
 IMPLEMENT_TYPE(Float);
 IMPLEMENT_TYPE(Double);
+
+//----------------------------------------------------------------------------
+// Type::ForeignFunctionBase
+//----------------------------------------------------------------------------
+std::string ForeignFunctionBase::getTypeName() const
+{
+    std::string typeName = getReturnType()->getTypeName() + "<";
+    for(const auto *a : getArgumentTypes()) {
+        typeName += a->getTypeName() + ", ";
+    }
+    typeName += ">";
+    return typeName;
+}
+//----------------------------------------------------------------------------
+size_t ForeignFunctionBase::getTypeHash() const
+{
+    // Start with seed of return type hash
+    size_t seed = getReturnType()->getTypeHash();
+
+    // Combine hashes of each argument type
+    // **NOTE** this is the boost::hash_combine algorithm
+    for(const auto *a : getArgumentTypes()) {
+        seed ^= a->getTypeHash() + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
+    return seed;
+}
+
+//----------------------------------------------------------------------------
+// Free functions
 //----------------------------------------------------------------------------
 const NumericBase *getNumericType(const std::set<std::string_view> &typeSpecifiers)
 {

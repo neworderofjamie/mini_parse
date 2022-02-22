@@ -48,22 +48,22 @@ std::string test2(
     "}\n");
 
 std::string test3(
-    "scalar Imem;\n"
+    "double Imem;\n"
     "unsigned int mt;\n"
-    "scalar mdt= DT/25.0;\n"
-    "for (mt=0; mt < 25; mt++) {\n"
+    "double mdt= DT/25.0;\n"
+    "for (mt=0; mt < 25; mt=mt+1) {\n"
     "   Imem= -($(m)*$(m)*$(m)*$(h)*$(gNa)*($(V)-($(ENa)))+\n"
     "       $(n)*$(n)*$(n)*$(n)*$(gK)*($(V)-($(EK)))+\n"
     "       $(gl)*($(V)-($(El)))-$(Isyn));\n"
-    "   scalar _a;\n"
-    "   if (lV == -52.0) {\n"
+    "   double _a;\n"
+    "   if ($(V) == -52.0) {\n"
     "       _a= 1.28;\n"
     "   }\n"
     "   else {\n"
     "       _a= 0.32*(-52.0-$(V))/(exp((-52.0-$(V))/4.0)-1.0);\n"
     "   }\n"
-    "   scalar _b;\n"
-    "   if (lV == -25.0) {\n"
+    "   double _b;\n"
+    "   if ($(V) == -25.0) {\n"
     "       _b= 1.4;\n"
     "   }\n"
     "   else {\n"
@@ -73,7 +73,7 @@ std::string test3(
     "   _a= 0.128*exp((-48.0-$(V))/18.0);\n"
     "   _b= 4.0 / (exp((-25.0-$(V))/5.0)+1.0);\n"
     "   $(h)+= (_a*(1.0-$(h))-_b*$(h))*mdt;\n"
-    "   if (lV == -50.0) {\n"
+    "   if ($(V) == -50.0) {\n"
     "       _a= 0.16;\n"
     "   }\n"
     "   else {\n"
@@ -142,13 +142,23 @@ public:
     }
 };
 
+class ExpType : public Type::ForeignFunctionBase
+{
+public:
+    DECLARE_TYPE(ExpType);
+
+    virtual const Type::NumericBase *getReturnType() const final { return Type::Double::getInstance(); }
+    virtual std::vector<const Type::NumericBase *> getArgumentTypes() const { return {Type::Double::getInstance()}; }
+};
+IMPLEMENT_TYPE(ExpType);
+
 int main()
 {
     ::ErrorHandler errorHandler;
     try
     {
         // Scan
-        const std::string source = removeOldStyleVar(test2);
+        const std::string source = removeOldStyleVar(test3);
         const auto tokens = MiniParse::Scanner::scanSource(
             source, errorHandler);
        /*const auto tokens = MiniParse::Scanner::scanSource(
@@ -185,14 +195,19 @@ int main()
         TypeChecker typeChecker;
         TypeChecker::Environment typeEnvironment;
         
-        typeEnvironment.define<Type::Double>("Isyn", true);
-        typeEnvironment.define<Type::Double>("Ioffset", true);
-        typeEnvironment.define<Type::Double>("Rmembrane", true);
-        typeEnvironment.define<Type::Double>("Vrest", true);
-        typeEnvironment.define<Type::Double>("ExpTC", true);
-        typeEnvironment.define<Type::Double>("DT", true);
+        typeEnvironment.define<Type::Double>("Isyn", true); 
+        typeEnvironment.define<Type::Double>("gNa", true);
+        typeEnvironment.define<Type::Double>("ENa", true);
+        typeEnvironment.define<Type::Double>("gK", true);
+        typeEnvironment.define<Type::Double>("EK", true);
+        typeEnvironment.define<Type::Double>("gl", true);
+        typeEnvironment.define<Type::Double>("El", true);
+        typeEnvironment.define<Type::Double>("C", true);
         typeEnvironment.define<Type::Double>("V");
-        typeEnvironment.define<Type::Double>("RefracTime");
+        typeEnvironment.define<Type::Double>("m");
+        typeEnvironment.define<Type::Double>("h");
+        typeEnvironment.define<Type::Double>("n");
+        typeEnvironment.define<ExpType>("exp");
         typeChecker.typeCheck(statements, typeEnvironment);
         
         PrettyPrinter printer;

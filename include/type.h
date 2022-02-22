@@ -9,40 +9,37 @@
 #include <string_view>
 #include <typeinfo>
 #include <type_traits>
+#include <vector>
 
 //----------------------------------------------------------------------------
 // Macros
 //----------------------------------------------------------------------------
-#define DECLARE_TYPE(TYPE)                      \
-    private:                                    \
+#define DECLARE_TYPE(TYPE)                          \
+    private:                                        \
         /*GENN_EXPORT*/ static TYPE *s_Instance;    \
-    public:                                     \
-        static const TYPE *getInstance()        \
-        {                                       \
-            if(s_Instance == NULL)              \
-            {                                   \
-                s_Instance = new TYPE;          \
-            }                                   \
-            return s_Instance;                  \
+    public:                                         \
+        static const TYPE *getInstance()            \
+        {                                           \
+            if(s_Instance == NULL)                  \
+            {                                       \
+                s_Instance = new TYPE;              \
+            }                                       \
+            return s_Instance;                      \
         }
 
-#define DECLARE_NUMERIC_TYPE(TYPE, UNDERLYING_TYPE, RANK)                           \
-    class TYPE : public Numeric<UNDERLYING_TYPE, RANK>                              \
-    {                                                                               \
-        DECLARE_TYPE(TYPE)                                                          \
-        virtual std::string_view getTypeName() const{ return #UNDERLYING_TYPE; }    \
-    };                                                                              \
-    template<>                                                                      \
-    struct TypeTraits<UNDERLYING_TYPE>                                              \
-    {                                                                               \
-        using NumericType = TYPE;                                                   \
+#define DECLARE_NUMERIC_TYPE(TYPE, UNDERLYING_TYPE, RANK)                   \
+    class TYPE : public Numeric<UNDERLYING_TYPE, RANK>                      \
+    {                                                                       \
+        DECLARE_TYPE(TYPE)                                                  \
+        virtual std::string getTypeName() const{ return #UNDERLYING_TYPE; } \
+    };                                                                      \
+    template<>                                                              \
+    struct TypeTraits<UNDERLYING_TYPE>                                      \
+    {                                                                       \
+        using NumericType = TYPE;                                           \
     }
 
 #define IMPLEMENT_TYPE(TYPE) TYPE *TYPE::s_Instance = NULL
-
-
-
-
 
 //----------------------------------------------------------------------------
 // Type::TypeTraits
@@ -65,7 +62,7 @@ public:
     //------------------------------------------------------------------------
     // Declared virtuals
     //------------------------------------------------------------------------
-    virtual std::string_view getTypeName() const = 0;
+    virtual std::string getTypeName() const = 0;
     virtual size_t getSizeBytes() const = 0;
     virtual size_t getTypeHash() const = 0;
 };
@@ -85,6 +82,26 @@ public:
     virtual double getLowest() const = 0;
     virtual bool isSigned() const = 0;
     virtual bool isIntegral() const = 0;
+};
+
+//----------------------------------------------------------------------------
+// Type::ForeignFunctionBase
+//----------------------------------------------------------------------------
+class ForeignFunctionBase : public Base
+{
+public:
+    //------------------------------------------------------------------------
+    // Base virtuals
+    //------------------------------------------------------------------------
+    virtual std::string getTypeName() const final;
+    virtual size_t getSizeBytes() const final { return 0; }
+    virtual size_t getTypeHash() const final;
+
+    //------------------------------------------------------------------------
+    // Declared virtuals
+    //------------------------------------------------------------------------
+    virtual const NumericBase *getReturnType() const = 0;
+    virtual std::vector<const NumericBase*> getArgumentTypes() const = 0;
 };
 
 //----------------------------------------------------------------------------

@@ -83,7 +83,7 @@ void TypeChecker::visit(const Expression::Binary &binary)
     auto leftNumericType = dynamic_cast<const Type::NumericBase*>(leftType);
     auto rightNumericType = dynamic_cast<const Type::NumericBase*>(rightType);
     if(leftNumericType == nullptr || rightNumericType == nullptr) {
-        throw std::runtime_error("Invalid operand types '" + std::string{leftType->getTypeName()} + "' and '" + std::string{rightType->getTypeName()} + "' to binary " + std::string{binary.getOperator().lexeme});
+        throw std::runtime_error("Invalid operand types '" + leftType->getTypeName() + "' and '" + rightType->getTypeName() + "' to binary " + std::string{binary.getOperator().lexeme});
     }
     else {
         m_Type = Type::getCommonType(leftNumericType, rightNumericType);
@@ -92,7 +92,36 @@ void TypeChecker::visit(const Expression::Binary &binary)
 //---------------------------------------------------------------------------
 void TypeChecker::visit(const Expression::Call &call)
 {
-    assert(false);
+    // Evaluate callee type
+    // **NOTE** we can't call evaluate as that returns a value
+    auto calleeType = evaluateType(call.getCallee());
+    auto calleeFunctionType = dynamic_cast<const Type::ForeignFunctionBase *>(calleeType);
+
+    // If callee isn't a function at all, give error
+    if(calleeFunctionType == nullptr) {
+        throw std::runtime_error("Called object is not a function");
+    }
+    // Otherwise
+    else {
+        // If argument count doesn't match
+        const auto argTypes = calleeFunctionType->getArgumentTypes();
+        if(call.getArguments().size() < argTypes.size()) {
+            throw std::runtime_error("Too many arguments to function");
+        }
+        else if(call.getArguments().size() > argTypes.size()) {
+            throw std::runtime_error("Too few arguments to function");
+        }
+        else {
+            // Loop through arguments
+            // **TODO** check
+            /*for(size_t i = 0; i < argTypes.size(); i++) {
+                // Evaluate argument type 
+                auto callArgType = evaluateType(call.getArguments().at(i).get());
+            }*/
+            // Type is return type of function
+            m_Type = calleeFunctionType->getReturnType();
+        }
+    }
 }
 //---------------------------------------------------------------------------
 void TypeChecker::visit(const Expression::Conditional &conditional)
@@ -102,7 +131,7 @@ void TypeChecker::visit(const Expression::Conditional &conditional)
     auto trueNumericType = dynamic_cast<const Type::NumericBase*>(trueType);
     auto falseNumericType = dynamic_cast<const Type::NumericBase*>(falseType);
     if(trueNumericType == nullptr || falseNumericType == nullptr) {
-        throw std::runtime_error("Invalid operand types '" + std::string{trueType->getTypeName()} + "' and '" + std::string{falseType->getTypeName()} + "' to conditional");
+        throw std::runtime_error("Invalid operand types '" + trueType->getTypeName() + "' and '" + std::string{falseType->getTypeName()} + "' to conditional");
     }
     else {
         m_Type = Type::getCommonType(trueNumericType, falseNumericType);
@@ -140,7 +169,7 @@ void TypeChecker::visit(const Expression::Unary &unary)
     auto rightType = evaluateType(unary.getRight());
     auto rightNumericType = dynamic_cast<const Type::NumericBase*>(rightType);
     if(rightNumericType == nullptr) {
-        throw std::runtime_error("Invalid operand type '" + std::string{rightType->getTypeName()} + "' to unary " + std::string{unary.getOperator().lexeme});
+        throw std::runtime_error("Invalid operand type '" + rightType->getTypeName() + "' to unary " + std::string{unary.getOperator().lexeme});
     }
     else {
         // If operator is arithmetic, return promoted type
@@ -151,7 +180,7 @@ void TypeChecker::visit(const Expression::Unary &unary)
         else if(unary.getOperator().type == Token::Type::TILDA) {
             // Check type is integer
             if(!rightNumericType->isIntegral()) {
-                throw std::runtime_error("Bitwise complement operator does not support type '" + std::string{rightType->getTypeName()} + "'");
+                throw std::runtime_error("Bitwise complement operator does not support type '" + rightNumericType->getTypeName() + "'");
             }
 
             // Return promoted type
@@ -201,12 +230,15 @@ void TypeChecker::visit(const Statement::For &forStatement)
         forStatement.getIncrement()->accept(*this);
     }
 
+    forStatement.getBody()->accept(*this);
+
     // Restore environment
     m_Environment = previous;
 }
 //---------------------------------------------------------------------------
 void TypeChecker::visit(const Statement::If &ifStatement)
 {
+    ifStatement.getCondition()->accept(*this);
     ifStatement.getThenBranch()->accept(*this);
     ifStatement.getElseBranch()->accept(*this);
 }
