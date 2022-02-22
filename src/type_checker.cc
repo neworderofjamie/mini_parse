@@ -245,7 +245,6 @@ void TypeChecker::visit(const Statement::If &ifStatement)
 //---------------------------------------------------------------------------
 void TypeChecker::visit(const Statement::VarDeclaration &varDeclaration)
 {
-    // **TODO** something with type
     for(const auto &var : varDeclaration.getInitDeclaratorList()) {
         m_Environment->define(std::get<0>(var), varDeclaration.getType(), varDeclaration.isConst());
     }
