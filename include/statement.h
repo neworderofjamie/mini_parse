@@ -12,6 +12,10 @@ namespace MiniParse::Statement
 {
 class Visitor;
 }
+namespace Type
+{
+class NumericBase;
+}
 
 //---------------------------------------------------------------------------
 // MiniParse::Statement::Base
@@ -138,16 +142,20 @@ class VarDeclaration : public Base
 public:
     typedef std::vector<std::tuple<Token, MiniParse::Expression::ExpressionPtr>> InitDeclaratorList;
 
-    VarDeclaration(std::vector<Token> declarationSpecifiers, InitDeclaratorList initDeclaratorList)
-    :   m_DeclarationSpecifiers(std::move(declarationSpecifiers)), m_InitDeclaratorList(std::move(initDeclaratorList))
+    VarDeclaration(const Type::NumericBase *type, bool isConst, InitDeclaratorList initDeclaratorList)
+    :   m_Type(type), m_Const(isConst), m_InitDeclaratorList(std::move(initDeclaratorList))
     {}
 
     virtual void accept(Visitor &visitor) const override;
 
-    const std::vector<Token> &getDeclarationSpecifiers() const { return m_DeclarationSpecifiers; }
+    const Type::NumericBase *getType() const { return m_Type; }
+    bool isConst() const { return m_Const; }
+    
     const InitDeclaratorList &getInitDeclaratorList() const { return m_InitDeclaratorList; }
     
 private:
+    const Type::NumericBase *m_Type;
+    const bool m_Const;
     const std::vector<Token> m_DeclarationSpecifiers;
     const InitDeclaratorList m_InitDeclaratorList;
 };

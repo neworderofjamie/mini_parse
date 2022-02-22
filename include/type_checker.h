@@ -2,69 +2,53 @@
 
 // Standard C++ includes
 #include <unordered_map>
-#include <vector>
 
 // Mini-parse includes
 #include "expression.h"
 #include "statement.h"
+
+// Forward declarations
+namespace Type
+{
+class NumericBase;
+}
 
 //---------------------------------------------------------------------------
 // MiniParse::Interpreter
 //---------------------------------------------------------------------------
 namespace MiniParse
 {
-class Interpreter : public Expression::Visitor, public Statement::Visitor
+class TypeChecker : public Expression::Visitor, public Statement::Visitor
 {
 public:
     //---------------------------------------------------------------------------
-    // MiniParse::Interpreter::Callable
-    //---------------------------------------------------------------------------
-    class Callable
-    {
-    public:
-        virtual size_t getArity() const = 0;
-        virtual Token::LiteralValue call(const std::vector<Token::LiteralValue> &arguments) = 0;
-    };
-
-    typedef std::variant<Token::LiteralValue, std::reference_wrapper<Callable>> Value;
-
-    //---------------------------------------------------------------------------
-    // MiniParse::Interpreter::Environment
+    // MiniParse::TypeChecker::Environment
     //---------------------------------------------------------------------------
     class Environment
     {
     public:
         Environment(Environment *enclosing = nullptr)
-        :   m_Enclosing(enclosing)
+            : m_Enclosing(enclosing)
         {
         }
 
-        // **TODO** type
-        void define(const Token &name, Token::LiteralValue value);
-
-        // **TODO** type
-        void define(std::string_view name, Callable &callable);
-
-        // **TODO** type
-        void assign(const Token &name, Token::LiteralValue value, Token::Type op);
-
-        // **TODO** type
-        Value get(const Token &name) const;
+        void define(const Token &name, const Type::NumericBase *type, bool isConst);
+        void assign(const Token &name, const Type::NumericBase *type);
+        std::tuple<const Type::NumericBase*, bool> getType(const Token &name) const;
 
     private:
         Environment *m_Enclosing;
-        std::unordered_map<std::string_view, Value> m_Values;
+        std::unordered_map<std::string_view, std::tuple<const Type::NumericBase*, bool>> m_Types;
     };
 
-    Interpreter()
-    :   m_Environment(nullptr)
+    TypeChecker()
+        : m_Environment(nullptr), m_Type(nullptr)
     {
     }
     //---------------------------------------------------------------------------
     // Public API
     //---------------------------------------------------------------------------
-    Token::LiteralValue evaluate(const Expression::Base *expression);
-    void interpret(const Statement::StatementList &statements, Environment &environment);
+    void typeCheck(const Statement::StatementList &statements, Environment &environment);
 
     //---------------------------------------------------------------------------
     // Expression::Visitor virtuals
@@ -78,7 +62,7 @@ public:
     virtual void visit(const Expression::Logical &logical) override;
     virtual void visit(const Expression::Variable &variable) override;
     virtual void visit(const Expression::Unary &unary) override;
-    
+
     //---------------------------------------------------------------------------
     // Statement::Visitor virtuals
     //---------------------------------------------------------------------------
@@ -92,11 +76,12 @@ public:
     virtual void visit(const Statement::Print &print) override;
 
 private:
+    const Type::NumericBase *evaluateType(const Expression::Base *expression);
+
     //---------------------------------------------------------------------------
     // Members
     //---------------------------------------------------------------------------
-    Value m_Value;
-    
     Environment *m_Environment;
+    const Type::NumericBase *m_Type;
 };
 }

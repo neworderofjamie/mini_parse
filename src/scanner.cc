@@ -2,14 +2,17 @@
 
 // Standard C++ includes
 #include <charconv>
+#include <functional>
+#include <map>
+#include <set>
 #include <unordered_map>
-#include <unordered_set>
 
 // Standard C includes
 #include <cctype>
 
 // Mini-parse includes
 #include "error_handler.h"
+#include "utils.h"
 
 using namespace MiniParse;
 using namespace MiniParse::Scanner;
@@ -39,7 +42,11 @@ const std::unordered_map<std::string_view, Token::Type> keywords{
     {"signed", Token::Type::TYPE_SPECIFIER},
     {"unsigned", Token::Type::TYPE_SPECIFIER},
     {"bool", Token::Type::TYPE_SPECIFIER}};
-
+//---------------------------------------------------------------------------
+const std::map<std::set<char>, std::function<Token::LiteralValue(std::string_view, std::chars_format)>> integerLiteralSuffixParsers{
+    {{}, [](std::string_view input, std::chars_format format) { return Utils::toCharsThrow<int32_t>(input, format); }},
+    {{'U'}, [](std::string_view input, std::chars_format format) { return Utils::toCharsThrow<uint32_t>(input, format); }},
+};
 //---------------------------------------------------------------------------
 // ScanState
 //---------------------------------------------------------------------------
@@ -127,33 +134,21 @@ bool isodigit(char c)
 {
     return (c >= '0' && c <= '7');
 }
-//---------------------------------------------------------------------------
-template<typename T>
-T toCharsThrow(std::string_view input, std::chars_format format = std::chars_format::general)
-{
-    T out;
-    const auto result = std::from_chars(input.data(), input.data() + input.size(), out);
-    if(result.ec == std::errc::invalid_argument) {
-        throw std::invalid_argument("Unable to convert chars '" + std::string{input} + "'");
-    }
-    else if(result.ec == std::errc::result_out_of_range) {
-        throw std::out_of_range("Unable to convert chars '" + std::string{input} + "'");
-    }
-    return out;
-}
+
 //---------------------------------------------------------------------------
 void emplaceToken(std::vector<Token> &tokens, Token::Type type, const ScanState &scanState, Token::LiteralValue literalValue = Token::LiteralValue())
 {
     tokens.emplace_back(type, scanState.getLexeme(), scanState.getLine(), literalValue);
 }
 //---------------------------------------------------------------------------
-void scanIntegerSuffix(ScanState &scanState)
+std::set<char> scanIntegerSuffix(ScanState &scanState)
 {
     // Read suffix
-    // **TODO** complete
-    while(std::tolower(scanState.peek()) == 'u' || std::tolower(scanState.peek()) == 'l') {
-        scanState.advance();
+    std::set<char> suffix;
+    while(std::toupper(scanState.peek()) == 'U' || std::toupper(scanState.peek()) == 'L') {
+        suffix.insert(std::toupper(scanState.advance()));
     }
+    return suffix;
 }
 //---------------------------------------------------------------------------
 void scanNumber(char c, ScanState &scanState, std::vector<Token> &tokens) 
@@ -198,7 +193,7 @@ void scanNumber(char c, ScanState &scanState, std::vector<Token> &tokens)
                     // Add single-precision token
                     // **NOTE** skip 0x prefix
                     emplaceToken(tokens, Token::Type::NUMBER, scanState,
-                                 toCharsThrow<float>(scanState.getLexeme().substr(2), std::chars_format::hex));
+                                 Utils::toCharsThrow<float>(scanState.getLexeme().substr(2), std::chars_format::hex));
 
                     // Advance
                     // **NOTE** we do this AFTER parsing float as std::to_chars doesn't deal with suffixes
@@ -208,19 +203,17 @@ void scanNumber(char c, ScanState &scanState, std::vector<Token> &tokens)
                 // **NOTE** skip 0x prefix
                 else {
                     emplaceToken(tokens, Token::Type::NUMBER, scanState,
-                                 toCharsThrow<double>(scanState.getLexeme().substr(2), std::chars_format::hex));
+                                 Utils::toCharsThrow<double>(scanState.getLexeme().substr(2), std::chars_format::hex));
                 }
             }
         }
         // Otherwise, number is hexadecimal integer
         else {
-            scanIntegerSuffix(scanState);
-
             // Add integer token
-            // **TODO** different types
             // **NOTE** skip 0x prefix
+            const auto suffix = scanIntegerSuffix(scanState);
             emplaceToken(tokens, Token::Type::NUMBER, scanState,
-                         toCharsThrow<int64_t>(scanState.getLexeme().substr(2), std::chars_format::hex));
+                         integerLiteralSuffixParsers.at(suffix)(scanState.getLexeme().substr(2), std::chars_format::hex));
         }
     }
     // Otherwise, if this is an octal integer
@@ -261,7 +254,7 @@ void scanNumber(char c, ScanState &scanState, std::vector<Token> &tokens)
             if(std::tolower(scanState.peek()) == 'f') {
                 // Add single-precision token
                 emplaceToken(tokens, Token::Type::NUMBER, scanState,
-                             toCharsThrow<float>(scanState.getLexeme()));
+                             Utils::toCharsThrow<float>(scanState.getLexeme()));
 
                 // Advance
                 // **NOTE** we do this AFTER parsing float as std::to_chars doesn't deal with suffixes
@@ -270,17 +263,15 @@ void scanNumber(char c, ScanState &scanState, std::vector<Token> &tokens)
             // Otherwise, add double-precision token
             else {
                 emplaceToken(tokens, Token::Type::NUMBER, scanState,
-                             toCharsThrow<double>(scanState.getLexeme()));
+                             Utils::toCharsThrow<double>(scanState.getLexeme()));
             }
         }
         // Otherwise, number is integer
         else {
-            scanIntegerSuffix(scanState);
-
             // Add integer token
-            // **TODO** different types
+            const auto suffix = scanIntegerSuffix(scanState);
             emplaceToken(tokens, Token::Type::NUMBER, scanState,
-                         toCharsThrow<int64_t>(scanState.getLexeme()));
+                         integerLiteralSuffixParsers.at(suffix)(scanState.getLexeme(), std::chars_format::general));
         }
     }
 }

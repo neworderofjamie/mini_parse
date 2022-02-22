@@ -1,6 +1,7 @@
 #include "pretty_printer.h"
 
 // Mini-parse includes
+#include "type.h"
 #include "utils.h"
 
 //---------------------------------------------------------------------------
@@ -15,6 +16,7 @@ std::string PrettyPrinter::print(const Statement::StatementList &statements)
 
     for(auto &s : statements) {
         s.get()->accept(*this);
+        m_StringStream << std::endl;
     }
     
     // Return string stream contents
@@ -145,9 +147,10 @@ void PrettyPrinter::visit(const Statement::If &ifStatement)
 //---------------------------------------------------------------------------
 void PrettyPrinter::visit(const Statement::VarDeclaration &varDeclaration)
 {
-    for(const auto &var : varDeclaration.getDeclarationSpecifiers()) {
-         m_StringStream << var.lexeme << " ";
+    if(varDeclaration.isConst()) {
+        m_StringStream << "const ";
     }
+    m_StringStream << varDeclaration.getType()->getTypeName() << " ";
 
     for(const auto &var : varDeclaration.getInitDeclaratorList()) {
         m_StringStream << std::get<0>(var).lexeme;

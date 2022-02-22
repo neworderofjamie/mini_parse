@@ -14,7 +14,7 @@ namespace MiniParse
 {
 struct Token
 {
-    typedef std::variant<std::monostate, bool, float, double, uint32_t, int32_t, uint64_t, int64_t> LiteralValue;
+    typedef std::variant<std::monostate, bool, float, double, uint32_t, int32_t/*, uint64_t, int64_t*/> LiteralValue;
 
     enum class Type
     {

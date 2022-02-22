@@ -7,7 +7,6 @@
 #include <string>
 #include <type_traits>
 
-
 // Standard C includes
 #include <cassert>
 

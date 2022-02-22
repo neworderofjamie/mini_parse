@@ -1,10 +1,15 @@
 #include "parser.h"
 
 // Standard C++ includes
+#include <map>
+#include <set>
 #include <stdexcept>
 
 // Standard C includes
 #include <cassert>
+
+// GeNN includes
+#include "type.h"
 
 // Mini-parse includes
 #include "error_handler.h"
@@ -581,11 +586,32 @@ std::unique_ptr<const Statement::Base> parseDeclaration(ParserState &parserState
     // type-qualifier ::=
     //      "const"
 
-    // Build declaration specifier list (single list of specifiers and qualifiers is fine for our purposes)
-    std::vector<Token> declarationSpecifiers{parserState.previous()};
-    while(parserState.match({Token::Type::TYPE_QUALIFIER, Token::Type::TYPE_SPECIFIER})) {
-        declarationSpecifiers.push_back(parserState.previous());
+    // Loop through type qualifier and specifier tokens
+    std::set<std::string_view> typeQualifiers{};
+    std::set<std::string_view> typeSpecifiers{};
+    do {
+        // Add token lexeme to appropriate set, giving error if duplicate 
+        if(parserState.previous().type == Token::Type::TYPE_QUALIFIER) {
+            if(!typeQualifiers.insert(parserState.previous().lexeme).second) {
+                parserState.error(parserState.previous(), "duplicate type qualifier");
+            }
+        }
+        else {
+            if(!typeSpecifiers.insert(parserState.previous().lexeme).second) {
+                parserState.error(parserState.previous(), "duplicate type specifier");
+            }
+        }
+    } while(parserState.match({Token::Type::TYPE_QUALIFIER, Token::Type::TYPE_SPECIFIER}));
+    
+    // Lookup type
+    const auto *type = Type::getType(typeSpecifiers);
+    if(type == nullptr) {
+        parserState.error("Unknown type specifier");
     }
+
+    // Determine constness
+    // **NOTE** this only works as const is the ONLY supported qualifier
+    const bool isConst = !typeQualifiers.empty();
 
     // Read init declarator list
     std::vector<std::tuple<Token, Expression::ExpressionPtr>> initDeclaratorList;
@@ -609,8 +635,7 @@ std::unique_ptr<const Statement::Base> parseDeclaration(ParserState &parserState
     } while(!parserState.isAtEnd() && parserState.match(Token::Type::COMMA));
 
     parserState.consume(Token::Type::SEMICOLON, "Expect ';' after variable declaration");
-    return std::make_unique<Statement::VarDeclaration>(std::move(declarationSpecifiers), 
-                                                       std::move(initDeclaratorList));
+    return std::make_unique<Statement::VarDeclaration>(type, isConst, std::move(initDeclaratorList));
 }
 
 std::unique_ptr<const Statement::Base> parseBlockItem(ParserState &parserState)

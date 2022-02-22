@@ -14,7 +14,10 @@
 #include "parser.h"
 #include "pretty_printer.h"
 #include "scanner.h"
+#include "type_checker.h"
 #include "utils.h"
+
+using namespace MiniParse;
 
 std::string test(
     "if($(outRow) == $(maxOutRow)) {\n"
@@ -99,7 +102,7 @@ public:
         report(line, "", message);
     }
 
-    virtual void error(const MiniParse::Token &token, std::string_view message) override
+    virtual void error(const Token &token, std::string_view message) override
     {
         if(token.type == MiniParse::Token::Type::END_OF_FILE) {
             report(token.line, " at end", message);
@@ -119,9 +122,9 @@ private:
     bool m_Error;
 };
 
-class Sqrt : public MiniParse::Interpreter::Callable
+class Sqrt : public Interpreter::Callable
 {
-    using LiteralValue = MiniParse::Token::LiteralValue;
+    using LiteralValue = Token::LiteralValue;
 public:
     virtual size_t getArity() const final
     {
@@ -140,11 +143,11 @@ public:
 
 int main()
 {
-    ErrorHandler errorHandler;
+    ::ErrorHandler errorHandler;
     try
     {
         // Scan
-       /*const auto tokens = MiniParse::Scanner::scanSource(
+       const auto tokens = MiniParse::Scanner::scanSource(
             "int x = 4, y;\n"
             "print ((12 + x) * 5) + 3;\n"
             "y = 12;\n"
@@ -154,7 +157,7 @@ int main()
             "print y;\n"
             "print 100;\n"
             "print true;\n", errorHandler);
-        const auto tokens = MiniParse::Scanner::scanSource(
+        /*const auto tokens = MiniParse::Scanner::scanSource(
             "int x = 4;\n"
             "print x;\n"
             "{\n"
@@ -166,21 +169,26 @@ int main()
         const auto tokens = MiniParse::Scanner::scanSource(
             "double x = 2.0f;\n"
             "print x;\n"
-            "print sqrt(x);\n", errorHandler);*/
-        const auto tokens = MiniParse::Scanner::scanSource(
+            "print sqrt(x);\n", errorHandler);
+        const auto tokens = Scanner::scanSource(
             "for(float x = 0.0f; x < 10.0f; x = x + 1.0f) {\n"
             "   print x;\n"
             "   print sqrt(x);\n"
-            "}\n", errorHandler);
+            "}\n", errorHandler);*/
         // Parse
-        auto statements = MiniParse::Parser::parseStatements(tokens, errorHandler);
+        auto statements = Parser::parseStatements(tokens, errorHandler);
         
-        MiniParse::PrettyPrinter printer;
+        PrettyPrinter printer;
         std::cout << printer.print(statements) << std::endl;
+        
+        TypeChecker typeChecker;
+        TypeChecker::Environment typeEnvironment;
+        typeChecker.typeCheck(statements, typeEnvironment);
+        
         Sqrt sqrt;
-        MiniParse::Interpreter::Environment environment;
+        Interpreter::Environment environment;
         environment.define("sqrt", sqrt);
-        MiniParse::Interpreter interpreter;
+        Interpreter interpreter;
         interpreter.interpret(statements, environment);
     }
     catch(const std::exception &e) {
