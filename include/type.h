@@ -58,7 +58,7 @@ struct TypeTraits
 //----------------------------------------------------------------------------
 // Type::Base
 //----------------------------------------------------------------------------
-//! Base class for all supported types
+//! Base class for all supported numericTypes
 class Base
 {
 public:
@@ -111,7 +111,7 @@ public:
     virtual bool isIntegral() const final { return std::is_integral<T>::value; }
 };
 
-// Declare numeric types
+// Declare numeric numericTypes
 DECLARE_NUMERIC_TYPE(Bool, bool, 0);
 DECLARE_NUMERIC_TYPE(Int8, int8_t, 10);
 DECLARE_NUMERIC_TYPE(Int16, int16_t, 20);
@@ -125,7 +125,7 @@ DECLARE_NUMERIC_TYPE(Float, float, 50);
 DECLARE_NUMERIC_TYPE(Double, double, 60);
 
 //! Look up type based on set of type specifiers
-const NumericBase *getType(const std::set<std::string_view> &typeSpecifiers);
+const NumericBase *getNumericType(const std::set<std::string_view> &typeSpecifiers);
 const NumericBase *getPromotedType(const NumericBase *type);
 const NumericBase *getCommonType(const NumericBase *a, const NumericBase *b);
 }   // namespace Type

@@ -17,14 +17,14 @@
 //---------------------------------------------------------------------------
 namespace MiniParse
 {
-void TypeChecker::Environment::define(const Token &name, const Type::NumericBase *type, bool isConst)
+void TypeChecker::Environment::define(const Token &name, const Type::Base *type, bool isConst)
 {
     if(!m_Types.try_emplace(name.lexeme, type, isConst).second) {
         throw std::runtime_error("Redeclaration of '" + std::string{name.lexeme} + "' at line " + std::to_string(name.line));
     }
 }
 //---------------------------------------------------------------------------
-void TypeChecker::Environment::assign(const Token &name, const Type::NumericBase *type)
+void TypeChecker::Environment::assign(const Token &name, const Type::Base *type)
 {
     auto existingType = m_Types.find(name.lexeme);
     if(existingType == m_Types.end()) {
@@ -41,7 +41,7 @@ void TypeChecker::Environment::assign(const Token &name, const Type::NumericBase
     }
 }
 //---------------------------------------------------------------------------
-std::tuple<const Type::NumericBase*, bool> TypeChecker::Environment::getType(const Token &name) const
+std::tuple<const Type::Base*, bool> TypeChecker::Environment::getType(const Token &name) const
 {
     auto type = m_Types.find(std::string{name.lexeme});
     if(type == m_Types.end()) {
@@ -80,7 +80,14 @@ void TypeChecker::visit(const Expression::Binary &binary)
 {
     auto leftType = evaluateType(binary.getLeft());
     auto rightType = evaluateType(binary.getRight());
-    m_Type = Type::getCommonType(leftType, rightType);
+    auto leftNumericType = dynamic_cast<const Type::NumericBase*>(leftType);
+    auto rightNumericType = dynamic_cast<const Type::NumericBase*>(rightType);
+    if(leftNumericType == nullptr || rightNumericType == nullptr) {
+        throw std::runtime_error("Invalid operand types '" + std::string{leftType->getTypeName()} + "' and '" + std::string{rightType->getTypeName()} + "' to binary " + std::string{binary.getOperator().lexeme});
+    }
+    else {
+        m_Type = Type::getCommonType(leftNumericType, rightNumericType);
+    }   
 }
 //---------------------------------------------------------------------------
 void TypeChecker::visit(const Expression::Call &call)
@@ -92,7 +99,14 @@ void TypeChecker::visit(const Expression::Conditional &conditional)
 {
     auto trueType = evaluateType(conditional.getTrue());
     auto falseType = evaluateType(conditional.getFalse());
-    m_Type = Type::getCommonType(trueType, falseType);
+    auto trueNumericType = dynamic_cast<const Type::NumericBase*>(trueType);
+    auto falseNumericType = dynamic_cast<const Type::NumericBase*>(falseType);
+    if(trueNumericType == nullptr || falseNumericType == nullptr) {
+        throw std::runtime_error("Invalid operand types '" + std::string{trueType->getTypeName()} + "' and '" + std::string{falseType->getTypeName()} + "' to conditional");
+    }
+    else {
+        m_Type = Type::getCommonType(trueNumericType, falseNumericType);
+    }
 }
 //---------------------------------------------------------------------------
 void TypeChecker::visit(const Expression::Grouping &grouping)
@@ -107,7 +121,6 @@ void TypeChecker::visit(const Expression::Literal &literal)
             [](auto v)->const Type::NumericBase*{ return Type::TypeTraits<decltype(v)>::NumericType::getInstance(); },
             [](std::monostate)->const Type::NumericBase* { return nullptr; }},
         literal.getValue());
-
 }
 //---------------------------------------------------------------------------
 void TypeChecker::visit(const Expression::Logical &logical)
@@ -125,24 +138,29 @@ void TypeChecker::visit(const Expression::Variable &variable)
 void TypeChecker::visit(const Expression::Unary &unary)
 {
     auto rightType = evaluateType(unary.getRight());
-
-    // If operator is arithmetic, return promoted type
-    if(unary.getOperator().type == Token::Type::PLUS || unary.getOperator().type == Token::Type::MINUS) {
-        m_Type = Type::getPromotedType(rightType);
+    auto rightNumericType = dynamic_cast<const Type::NumericBase*>(rightType);
+    if(rightNumericType == nullptr) {
+        throw std::runtime_error("Invalid operand type '" + std::string{rightType->getTypeName()} + "' to unary " + std::string{unary.getOperator().lexeme});
     }
-    // Otherwise, if operator is bitwise
-    else if(unary.getOperator().type == Token::Type::TILDA) {
-        // Check type is integer
-        if(!rightType->isIntegral()) {
-            throw std::runtime_error("Bitwise complement operator does not support type '" + std::string{rightType->getTypeName()} + "'");
+    else {
+        // If operator is arithmetic, return promoted type
+        if(unary.getOperator().type == Token::Type::PLUS || unary.getOperator().type == Token::Type::MINUS) {
+            m_Type = Type::getPromotedType(rightNumericType);
         }
+        // Otherwise, if operator is bitwise
+        else if(unary.getOperator().type == Token::Type::TILDA) {
+            // Check type is integer
+            if(!rightNumericType->isIntegral()) {
+                throw std::runtime_error("Bitwise complement operator does not support type '" + std::string{rightType->getTypeName()} + "'");
+            }
 
-        // Return promoted type
-        m_Type = Type::getPromotedType(rightType);
-    }
-    // Otherwise, if operator is logical
-    else if(unary.getOperator().type == Token::Type::NOT) {
-        m_Type = Type::Int32::getInstance();
+            // Return promoted type
+            m_Type = Type::getPromotedType(rightNumericType);
+        }
+        // Otherwise, if operator is logical
+        else if(unary.getOperator().type == Token::Type::NOT) {
+            m_Type = Type::Int32::getInstance();
+        }
     }
 }
 //---------------------------------------------------------------------------
@@ -212,7 +230,7 @@ void TypeChecker::visit(const Statement::Print &print)
     print.getExpression()->accept(*this);
 }
 //---------------------------------------------------------------------------
-const Type::NumericBase* TypeChecker::evaluateType(const Expression::Base *expression)
+const Type::Base* TypeChecker::evaluateType(const Expression::Base *expression)
 {
     expression->accept(*this);
     return m_Type;

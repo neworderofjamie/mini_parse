@@ -7,7 +7,7 @@
 // Anonymous namespace
 namespace
 {
-const std::map<std::set<std::string_view>, const Type::NumericBase *> types{
+const std::map<std::set<std::string_view>, const Type::NumericBase*> numericTypes{
     {{"char"}, Type::Int8::getInstance()},
     
     {{"unsigned", "char"}, Type::Uint8::getInstance()},
@@ -31,20 +31,20 @@ const std::map<std::set<std::string_view>, const Type::NumericBase *> types{
     {{"double"}, Type::Double::getInstance()},
 };
 //----------------------------------------------------------------------------
-// Mapping of signed integer types to their unsigned equivalents
-const std::unordered_map<const Type::NumericBase *, const Type::NumericBase *> unsignedType{
+// Mapping of signed integer numericTypes to their unsigned equivalents
+const std::unordered_map<const Type::NumericBase*, const Type::NumericBase*> unsignedType{
     {Type::Int8::getInstance(), Type::Uint8::getInstance()},
     {Type::Int16::getInstance(), Type::Uint16::getInstance()},
     {Type::Int32::getInstance(), Type::Uint32::getInstance()}
 };
-}
+}   // Anonymous namespace
 
 //----------------------------------------------------------------------------
 // Type
 //----------------------------------------------------------------------------
 namespace Type
 {
-// Implement types
+// Implement numericTypes
 IMPLEMENT_TYPE(Bool);
 IMPLEMENT_TYPE(Int8);
 IMPLEMENT_TYPE(Int16);
@@ -55,10 +55,10 @@ IMPLEMENT_TYPE(Uint32);
 IMPLEMENT_TYPE(Float);
 IMPLEMENT_TYPE(Double);
 //----------------------------------------------------------------------------
-const NumericBase *getType(const std::set<std::string_view> &typeSpecifiers)
+const NumericBase *getNumericType(const std::set<std::string_view> &typeSpecifiers)
 {
-    const auto type = types.find(typeSpecifiers);
-    return (type == types.cend()) ? nullptr : type->second;
+    const auto type = numericTypes.find(typeSpecifiers);
+    return (type == numericTypes.cend()) ? nullptr : type->second;
 }
 //----------------------------------------------------------------------------
 const NumericBase *getPromotedType(const NumericBase *type)
@@ -88,7 +88,7 @@ const NumericBase *getCommonType(const NumericBase *a, const NumericBase *b)
     }
     // Otherwise, must be an integer type
     else {
-        // Promote both types
+        // Promote both numericTypes
         const auto *aPromoted = getPromotedType(a);
         const auto *bPromoted = getPromotedType(b);
 
@@ -96,7 +96,7 @@ const NumericBase *getCommonType(const NumericBase *a, const NumericBase *b)
         if(aPromoted->getTypeHash() == bPromoted->getTypeHash()) {
             return aPromoted;
         }
-        // Otherwise, if both promoted operands have signed integer types or both have unsigned integer types, 
+        // Otherwise, if both promoted operands have signed integer numericTypes or both have unsigned integer numericTypes, 
         // the operand with the type of lesser integer conversion rank is converted to the type of the operand with greater rank.
         else if(aPromoted->isSigned() == bPromoted->isSigned()) {
             return (aPromoted->getRank() > bPromoted->getRank()) ? aPromoted : bPromoted;

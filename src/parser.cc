@@ -604,7 +604,7 @@ std::unique_ptr<const Statement::Base> parseDeclaration(ParserState &parserState
     } while(parserState.match({Token::Type::TYPE_QUALIFIER, Token::Type::TYPE_SPECIFIER}));
     
     // Lookup type
-    const auto *type = Type::getType(typeSpecifiers);
+    const auto *type = Type::getNumericType(typeSpecifiers);
     if(type == nullptr) {
         parserState.error("Unknown type specifier");
     }

@@ -9,9 +9,13 @@
 #include "statement.h"
 
 // Forward declarations
+namespace MiniParse
+{
+class ErrorHandler;
+}
 namespace Type
 {
-class NumericBase;
+class Base;
 }
 
 //---------------------------------------------------------------------------
@@ -40,13 +44,13 @@ public:
                 throw std::runtime_error("Redeclaration of '" + std::string{name} + "'");
             }
         }
-        void define(const Token &name, const Type::NumericBase *type, bool isConst = false);
-        void assign(const Token &name, const Type::NumericBase *type);
-        std::tuple<const Type::NumericBase*, bool> getType(const Token &name) const;
+        void define(const Token &name, const Type::Base *type, bool isConst = false);
+        void assign(const Token &name, const Type::Base *type);
+        std::tuple<const Type::Base*, bool> getType(const Token &name) const;
 
     private:
         Environment *m_Enclosing;
-        std::unordered_map<std::string_view, std::tuple<const Type::NumericBase*, bool>> m_Types;
+        std::unordered_map<std::string_view, std::tuple<const Type::Base*, bool>> m_Types;
     };
 
     TypeChecker()
@@ -84,12 +88,12 @@ public:
     virtual void visit(const Statement::Print &print) override;
 
 private:
-    const Type::NumericBase *evaluateType(const Expression::Base *expression);
+    const Type::Base *evaluateType(const Expression::Base *expression);
 
     //---------------------------------------------------------------------------
     // Members
     //---------------------------------------------------------------------------
     Environment *m_Environment;
-    const Type::NumericBase *m_Type;
+    const Type::Base *m_Type;
 };
 }
