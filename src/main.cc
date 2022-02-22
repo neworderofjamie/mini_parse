@@ -14,6 +14,7 @@
 #include "parser.h"
 #include "pretty_printer.h"
 #include "scanner.h"
+#include "type.h"
 #include "type_checker.h"
 #include "utils.h"
 
@@ -39,7 +40,7 @@ std::string test(
 
 std::string test2(
     "if ($(RefracTime) <= 0.0) {\n"
-    "  scalar alpha = (($(Isyn) + $(Ioffset)) * $(Rmembrane)) + $(Vrest);\n"
+    "  double alpha = (($(Isyn) + $(Ioffset)) * $(Rmembrane)) + $(Vrest);\n"
     "  $(V) = alpha - ($(ExpTC) * (alpha - $(V)));\n"
     "}\n"
     "else {\n"
@@ -147,7 +148,10 @@ int main()
     try
     {
         // Scan
-       const auto tokens = MiniParse::Scanner::scanSource(
+        const std::string source = removeOldStyleVar(test2);
+        const auto tokens = MiniParse::Scanner::scanSource(
+            source, errorHandler);
+       /*const auto tokens = MiniParse::Scanner::scanSource(
             "int x = 4, y;\n"
             "print ((12 + x) * 5) + 3;\n"
             "y = 12;\n"
@@ -157,7 +161,7 @@ int main()
             "print y;\n"
             "print 100;\n"
             "print true;\n", errorHandler);
-        /*const auto tokens = MiniParse::Scanner::scanSource(
+        const auto tokens = MiniParse::Scanner::scanSource(
             "int x = 4;\n"
             "print x;\n"
             "{\n"
@@ -178,13 +182,23 @@ int main()
         // Parse
         auto statements = Parser::parseStatements(tokens, errorHandler);
         
+        TypeChecker typeChecker;
+        TypeChecker::Environment typeEnvironment;
+        
+        typeEnvironment.define<Type::Double>("Isyn", true);
+        typeEnvironment.define<Type::Double>("Ioffset", true);
+        typeEnvironment.define<Type::Double>("Rmembrane", true);
+        typeEnvironment.define<Type::Double>("Vrest", true);
+        typeEnvironment.define<Type::Double>("ExpTC", true);
+        typeEnvironment.define<Type::Double>("DT", true);
+        typeEnvironment.define<Type::Double>("V");
+        typeEnvironment.define<Type::Double>("RefracTime");
+        typeChecker.typeCheck(statements, typeEnvironment);
+        
         PrettyPrinter printer;
         std::cout << printer.print(statements) << std::endl;
         
-        TypeChecker typeChecker;
-        TypeChecker::Environment typeEnvironment;
-        typeChecker.typeCheck(statements, typeEnvironment);
-        
+
         Sqrt sqrt;
         Interpreter::Environment environment;
         environment.define("sqrt", sqrt);

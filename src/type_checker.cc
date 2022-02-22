@@ -1,7 +1,6 @@
 #include "type_checker.h"
 
 // Standard C++ includes
-#include <stdexcept>
 #include <string>
 
 // Standard C includes

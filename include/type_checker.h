@@ -1,6 +1,7 @@
 #pragma once
 
 // Standard C++ includes
+#include <stdexcept>
 #include <unordered_map>
 
 // Mini-parse includes
@@ -32,7 +33,14 @@ public:
         {
         }
 
-        void define(const Token &name, const Type::NumericBase *type, bool isConst);
+        template<typename T>
+        void define(std::string_view name, bool isConst = false)
+        {
+            if(!m_Types.try_emplace(name, T::getInstance(), isConst).second) {
+                throw std::runtime_error("Redeclaration of '" + std::string{name} + "'");
+            }
+        }
+        void define(const Token &name, const Type::NumericBase *type, bool isConst = false);
         void assign(const Token &name, const Type::NumericBase *type);
         std::tuple<const Type::NumericBase*, bool> getType(const Token &name) const;
 
