@@ -44,7 +44,7 @@ const std::unordered_map<const Type::NumericBase*, const Type::NumericBase*> uns
 //----------------------------------------------------------------------------
 namespace Type
 {
-// Implement numericTypes
+// Implement numeric types
 IMPLEMENT_TYPE(Bool);
 IMPLEMENT_TYPE(Int8);
 IMPLEMENT_TYPE(Int16);
@@ -55,31 +55,8 @@ IMPLEMENT_TYPE(Uint32);
 IMPLEMENT_TYPE(Float);
 IMPLEMENT_TYPE(Double);
 
-//----------------------------------------------------------------------------
-// Type::ForeignFunctionBase
-//----------------------------------------------------------------------------
-std::string ForeignFunctionBase::getTypeName() const
-{
-    std::string typeName = getReturnType()->getTypeName() + "<";
-    for(const auto *a : getArgumentTypes()) {
-        typeName += a->getTypeName() + ", ";
-    }
-    typeName += ">";
-    return typeName;
-}
-//----------------------------------------------------------------------------
-size_t ForeignFunctionBase::getTypeHash() const
-{
-    // Start with seed of return type hash
-    size_t seed = getReturnType()->getTypeHash();
-
-    // Combine hashes of each argument type
-    // **NOTE** this is the boost::hash_combine algorithm
-    for(const auto *a : getArgumentTypes()) {
-        seed ^= a->getTypeHash() + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    }
-    return seed;
-}
+// Implement foreign function types
+IMPLEMENT_TYPE(Exp);
 
 //----------------------------------------------------------------------------
 // Free functions

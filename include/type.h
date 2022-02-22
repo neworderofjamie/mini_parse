@@ -39,6 +39,12 @@
         using NumericType = TYPE;                                           \
     }
 
+#define DECLARE_FOREIGN_FUNCTION_TYPE(TYPE, RETURN_TYPE, ...)       \
+    class TYPE : public ForeignFunction<RETURN_TYPE, __VA_ARGS__>   \
+    {                                                               \
+        DECLARE_TYPE(TYPE)                                          \
+    }
+
 #define IMPLEMENT_TYPE(TYPE) TYPE *TYPE::s_Instance = NULL
 
 //----------------------------------------------------------------------------
@@ -84,25 +90,6 @@ public:
     virtual bool isIntegral() const = 0;
 };
 
-//----------------------------------------------------------------------------
-// Type::ForeignFunctionBase
-//----------------------------------------------------------------------------
-class ForeignFunctionBase : public Base
-{
-public:
-    //------------------------------------------------------------------------
-    // Base virtuals
-    //------------------------------------------------------------------------
-    virtual std::string getTypeName() const final;
-    virtual size_t getSizeBytes() const final { return 0; }
-    virtual size_t getTypeHash() const final;
-
-    //------------------------------------------------------------------------
-    // Declared virtuals
-    //------------------------------------------------------------------------
-    virtual const NumericBase *getReturnType() const = 0;
-    virtual std::vector<const NumericBase*> getArgumentTypes() const = 0;
-};
 
 //----------------------------------------------------------------------------
 // Type::Numeric
@@ -128,7 +115,115 @@ public:
     virtual bool isIntegral() const final { return std::is_integral<T>::value; }
 };
 
-// Declare numeric numericTypes
+//----------------------------------------------------------------------------
+// Type::ForeignFunctionBase
+//----------------------------------------------------------------------------
+class ForeignFunctionBase : public Base
+{
+public:
+    //------------------------------------------------------------------------
+    // Base virtuals
+    //------------------------------------------------------------------------
+    virtual std::string getTypeName() const = 0;
+    virtual size_t getSizeBytes() const final { return 0; }
+    virtual size_t getTypeHash() const = 0;
+
+    //------------------------------------------------------------------------
+    // Declared virtuals
+    //------------------------------------------------------------------------
+    virtual const NumericBase *getReturnType() const = 0;
+    virtual std::vector<const NumericBase*> getArgumentTypes() const = 0;
+};
+
+//----------------------------------------------------------------------------
+// Type::ForeignFunction
+//----------------------------------------------------------------------------
+template<typename ReturnType, typename ...ArgTypes>
+class ForeignFunction : public ForeignFunctionBase
+{
+public:
+    //------------------------------------------------------------------------
+    // Base virtuals
+    //------------------------------------------------------------------------
+    virtual std::string getTypeName() const final
+    {
+        std::string typeName = getReturnType()->getTypeName() + "(";
+        updateTypeName<ArgTypes...>(typeName);
+        typeName += ")";
+        return typeName;
+    }
+
+    virtual size_t getTypeHash() const final
+    {
+        // Start with seed of return type hash
+        size_t seed = getReturnType()->getTypeHash();
+        updateTypeHash<ArgTypes...>(seed);
+        return seed;
+    }
+
+    //------------------------------------------------------------------------
+    // ForeignFunctionBase virtuals
+    //------------------------------------------------------------------------
+    virtual const NumericBase *getReturnType() const final
+    {
+        return ReturnType::getInstance();
+    }
+
+    virtual std::vector<const NumericBase*> getArgumentTypes() const final
+    {
+        std::vector<const NumericBase*> args;
+        args.reserve(sizeof...(ArgTypes));
+        updateArgumentTypes<ArgTypes...>(args);
+        return args;
+    }
+
+private:
+    //------------------------------------------------------------------------
+    // Private methods
+    //------------------------------------------------------------------------
+    template <typename T, typename... Args>
+    static void updateTypeHash(size_t &seed)
+    {
+        // Combine hashes with argument type
+        // **NOTE** this is the boost::hash_combine algorithm
+        seed ^= T::getInstance()->getTypeHash() + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+
+        // If there are more arguments left in pack, recurse
+        if constexpr (sizeof...(Args)) {
+            updateTypeHash<Args...>(seed);
+        }
+    }
+
+    template <typename T, typename... Args>
+    static void updateTypeName(std::string &typeName)
+    {
+        // Add argument typename to string
+        typeName += T::getInstance()->getTypeName();
+
+        // If there are more arguments left in pack, add comma and recurse
+        if constexpr (sizeof...(Args)) {
+            typeName += ", ";
+            updateTypeName<Args...>(typeName);
+        }
+    }
+
+    template <typename T, typename... Args>
+    static void updateArgumentTypes(std::vector<const NumericBase*> &args)
+    {
+        // Add argument typename to string
+        args.push_back(T::getInstance());
+
+        // If there are more arguments left in pack, recurse
+        if constexpr (sizeof...(Args)) {
+            updateArgumentTypes<Args...>(args);
+        }
+    }
+
+};
+
+//----------------------------------------------------------------------------
+// Declare numeric types
+//----------------------------------------------------------------------------
 DECLARE_NUMERIC_TYPE(Bool, bool, 0);
 DECLARE_NUMERIC_TYPE(Int8, int8_t, 10);
 DECLARE_NUMERIC_TYPE(Int16, int16_t, 20);
@@ -140,6 +235,11 @@ DECLARE_NUMERIC_TYPE(Uint32, uint32_t, 30);
 //DECLARE_NUMERIC_TYPE(Uint64, uint64_t, 40);
 DECLARE_NUMERIC_TYPE(Float, float, 50);
 DECLARE_NUMERIC_TYPE(Double, double, 60);
+
+//----------------------------------------------------------------------------
+// Declare standard library foreign function types
+//----------------------------------------------------------------------------
+DECLARE_FOREIGN_FUNCTION_TYPE(Exp, Double, Double);
 
 //! Look up type based on set of type specifiers
 const NumericBase *getNumericType(const std::set<std::string_view> &typeSpecifiers);

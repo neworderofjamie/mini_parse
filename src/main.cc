@@ -142,16 +142,6 @@ public:
     }
 };
 
-class ExpType : public Type::ForeignFunctionBase
-{
-public:
-    DECLARE_TYPE(ExpType);
-
-    virtual const Type::NumericBase *getReturnType() const final { return Type::Double::getInstance(); }
-    virtual std::vector<const Type::NumericBase *> getArgumentTypes() const { return {Type::Double::getInstance()}; }
-};
-IMPLEMENT_TYPE(ExpType);
-
 int main()
 {
     ::ErrorHandler errorHandler;
@@ -207,9 +197,10 @@ int main()
         typeEnvironment.define<Type::Double>("m");
         typeEnvironment.define<Type::Double>("h");
         typeEnvironment.define<Type::Double>("n");
-        typeEnvironment.define<ExpType>("exp");
+        typeEnvironment.define<Type::Exp>("exp");
         typeChecker.typeCheck(statements, typeEnvironment);
         
+        std::cout << Type::Exp::getInstance()->getTypeName() << std::endl;
         PrettyPrinter printer;
         std::cout << printer.print(statements) << std::endl;
         
