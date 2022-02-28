@@ -49,6 +49,14 @@ void Interpreter::Environment::define(std::string_view name, Callable &callable)
 //---------------------------------------------------------------------------
 Interpreter::Value Interpreter::Environment::assign(const Token &name, Token::LiteralValue value, Token::Type op)
 {
+#ifdef _WIN32
+    #pragma warning(push)
+    #pragma warning(disable: 4804)  // unsafe use of type 'bool' in operation
+    #pragma warning(disable: 4805)  // unsafe mix of type 'type' and type 'type' in operation
+#endif
+
+    using Type = Token::Type;
+
     auto variable = m_Values.find(name.lexeme);
     if(variable == m_Values.end()) {
         if(m_Enclosing == nullptr) {
@@ -63,61 +71,64 @@ Interpreter::Value Interpreter::Environment::assign(const Token &name, Token::Li
             Utils::Overload{
                 [op](auto variable, auto assign)
                 { 
-                    typedef typename std::common_type<decltype(variable), decltype(assign)>::type R;
-                    const R comVariable = static_cast<R>(variable);
-                    const R comAssign = static_cast<R>(assign);
-                    if(op == Token::Type::EQUAL) {
-                        return MiniParse::Token::LiteralValue(assign);
+                    if(op == Type::EQUAL) {
+                        return Token::LiteralValue(assign);
                     }
-                    else if(op == Token::Type::STAR_EQUAL) {
-                        return MiniParse::Token::LiteralValue(variable * assign);
+                    else if(op == Type::STAR_EQUAL) {
+                        return Token::LiteralValue(variable * assign);
                     }
-                    else if(op == Token::Type::SLASH_EQUAL) {
-                        return MiniParse::Token::LiteralValue(variable / assign);
+                    else if(op == Type::SLASH_EQUAL) {
+                        return Token::LiteralValue(variable / assign);
                     }
-                    /*else if(op == Token::Type::PERCENT_EQUAL) {
-                        return MiniParse::Token::LiteralValue(variable % assign);
-                    }*/
-                    else if(op == Token::Type::PLUS_EQUAL) {
-                        return MiniParse::Token::LiteralValue(variable + assign);
+                    else if(op == Type::PLUS_EQUAL) {
+                        return Token::LiteralValue(variable + assign);
                     }
-                     else if(op == Token::Type::MINUS_EQUAL) {
-                        return MiniParse::Token::LiteralValue(variable - assign);
+                    else if(op == Type::MINUS_EQUAL) {
+                        return Token::LiteralValue(variable - assign);
                     }
-                    /*else if(op == Token::Type::AMPERSAND_EQUAL) {
-                        return MiniParse::Token::LiteralValue(variable & assign);
+                    else if constexpr(std::is_integral_v<decltype(variable)> && std::is_integral_v<decltype(assign)>) {
+                        if(op == Type::PERCENT_EQUAL) {
+                            return Token::LiteralValue(variable % assign);
+                        }
+                        else if(op == Type::AMPERSAND_EQUAL) {
+                            return Token::LiteralValue(variable & assign);
+                        }
+                        else if(op == Type::CARET_EQUAL) {
+                            return Token::LiteralValue(variable ^ assign);
+                        }
+                        else if(op == Type::PIPE_EQUAL) {
+                            return Token::LiteralValue(variable | assign);
+                        }
                     }
-                    else if(op == Token::Type::CARET_EQUAL) {
-                        return MiniParse::Token::LiteralValue(variable ^ assign);
-                    }
-                    else if(op == Token::Type::PIPE_EQUAL) {
-                        return MiniParse::Token::LiteralValue(variable | assign);
-                    }*/
-                    else {
-                        throw std::runtime_error("Unsupported assignment operation");
-                    }
+                    throw std::runtime_error("Unsupported assignment operation");
                 },
-                [](std::monostate, std::monostate) { return MiniParse::Token::LiteralValue(); },
                 [op](std::monostate, auto assign) 
                 { 
-                    if(op == Token::Type::EQUAL) {
-                        return MiniParse::Token::LiteralValue(assign);
+                    if(op == Type::EQUAL) {
+                        return Token::LiteralValue(assign);
                     }
                     else {
-                        return MiniParse::Token::LiteralValue();
+                        throw std::runtime_error("Invalid assignment operand");
                     }
                 },
-                [](auto, std::monostate) { return MiniParse::Token::LiteralValue(); }},
+                [](std::monostate, std::monostate)->Token::LiteralValue { throw std::runtime_error("Invalid assignment operand"); },
+                [](auto, std::monostate)->Token::LiteralValue { throw std::runtime_error("Invalid assignment operand"); }},
             std::get<Token::LiteralValue>(variable->second), value);
 
         // Update environemnt with new value and return
         std::get<Token::LiteralValue>(variable->second) = newValue;
         return newValue;
     }
+
+#ifdef _WIN32
+    #pragma warning(pop)
+#endif
 }
 //---------------------------------------------------------------------------
 Interpreter::Value Interpreter::Environment::prefixIncDec(const Token &name, Token::Type op)
 {
+    using Type = Token::Type;
+
     auto variable = m_Values.find(name.lexeme);
     if(variable == m_Values.end()) {
         if(m_Enclosing == nullptr) {
@@ -133,17 +144,17 @@ Interpreter::Value Interpreter::Environment::prefixIncDec(const Token &name, Tok
             Utils::Overload{
                 [op](auto variable)
                 { 
-                    if(op == Token::Type::PLUS_PLUS) {
-                        return MiniParse::Token::LiteralValue(variable + 1);
+                    if(op == Type::PLUS_PLUS) {
+                        return Token::LiteralValue(variable + 1);
                     }
-                    else if(op == Token::Type::MINUS_MINUS) {
-                        return MiniParse::Token::LiteralValue(variable - 1);
+                    else if(op == Type::MINUS_MINUS) {
+                        return Token::LiteralValue(variable - 1);
                     }
                     else {
                         throw std::runtime_error("Unsupported prefix operation");
                     }
                 },
-                [](std::monostate) { return MiniParse::Token::LiteralValue(); }},
+                [](std::monostate)->Token::LiteralValue { throw std::runtime_error("Invalid prefix operand"); }},
             std::get<Token::LiteralValue>(variable->second));
 
         // Return updated value
@@ -153,6 +164,8 @@ Interpreter::Value Interpreter::Environment::prefixIncDec(const Token &name, Tok
 //---------------------------------------------------------------------------
 Interpreter::Value Interpreter::Environment::postfixIncDec(const Token &name, Token::Type op)
 {
+    using Type = Token::Type;
+
     auto variable = m_Values.find(name.lexeme);
     if(variable == m_Values.end()) {
         if(m_Enclosing == nullptr) {
@@ -169,17 +182,17 @@ Interpreter::Value Interpreter::Environment::postfixIncDec(const Token &name, To
             Utils::Overload{
                 [op](auto variable)
                 { 
-                    if(op == Token::Type::PLUS_PLUS) {
-                        return MiniParse::Token::LiteralValue(variable + 1);
+                    if(op == Type::PLUS_PLUS) {
+                        return Token::LiteralValue(variable + 1);
                     }
-                    else if(op == Token::Type::MINUS_MINUS) {
-                        return MiniParse::Token::LiteralValue(variable - 1);
+                    else if(op == Type::MINUS_MINUS) {
+                        return Token::LiteralValue(variable - 1);
                     }
                     else {
                         throw std::runtime_error("Unsupported postfix operation");
                     }
                 },
-                [](std::monostate) { return MiniParse::Token::LiteralValue(); }},
+                [](std::monostate)->Token::LiteralValue { throw std::runtime_error("Invalid postfix operand"); }},
             std::get<Token::LiteralValue>(variable->second));
 
         // Return previous value
@@ -230,56 +243,81 @@ void Interpreter::visit(const Expression::Assignment &assignment)
 //---------------------------------------------------------------------------
 void Interpreter::visit(const Expression::Binary &binary)
 {
+#ifdef _WIN32
+    #pragma warning(push)
+    #pragma warning(disable: 4804)  // unsafe use of type 'bool' in operation
+    #pragma warning(disable: 4805)  // unsafe mix of type 'type' and type 'type' in operation
+    #pragma warning(disable: 4018)  // signed/unsigned mismatch
+#endif
+    using Type = Token::Type;
+
     auto leftValue = evaluate(binary.getLeft());
     auto rightValue = evaluate(binary.getRight());
 
     const auto opType = binary.getOperator().type;
-
     m_Value = std::visit(
         Utils::Overload{
-            [opType](auto left, auto right)
-            { 
-                typedef typename std::common_type<decltype(left), decltype(right)>::type R;
-                const R comLeft = static_cast<R>(left);
-                const R comRight = static_cast<R>(right);
-                if(opType == Token::Type::PLUS) {
-                    return MiniParse::Token::LiteralValue(comLeft + comRight);
+            [opType](auto left, auto right)->Token::LiteralValue
+            {
+                if(opType == Type::PLUS) {
+                    return Token::LiteralValue(left + right);
                 }
-                else if(opType == Token::Type::MINUS) {
-                    return MiniParse::Token::LiteralValue(comLeft - comRight);
+                else if(opType == Type::MINUS) {
+                    return Token::LiteralValue(left - right);
                 }
-                else if(opType == Token::Type::STAR) {
-                    return MiniParse::Token::LiteralValue(comLeft * comRight);
+                else if(opType == Type::STAR) {
+                    return Token::LiteralValue(left * right);
                 }
-                else if(opType == Token::Type::SLASH) {
-                    return MiniParse::Token::LiteralValue(comLeft / comRight);
+                else if(opType == Type::SLASH) {
+                    return Token::LiteralValue(left / right);
                 }
-                else if(opType == Token::Type::GREATER) {
-                    return MiniParse::Token::LiteralValue(comLeft > comRight);
+                else if(opType == Type::GREATER) {
+                    return Token::LiteralValue(left > right);
                 }
-                 else if(opType == Token::Type::GREATER_EQUAL) {
-                    return MiniParse::Token::LiteralValue(comLeft >= comRight);
+                else if(opType == Type::GREATER_EQUAL) {
+                    return Token::LiteralValue(left >= right);
                 }
-                else if(opType == Token::Type::LESS) {
-                    return MiniParse::Token::LiteralValue(comLeft < comRight);
+                else if(opType == Type::LESS) {
+                    return Token::LiteralValue(left < right);
                 }
-                else if(opType == Token::Type::LESS_EQUAL) {
-                    return MiniParse::Token::LiteralValue(comLeft < comRight);
+                else if(opType == Type::LESS_EQUAL) {
+                    return Token::LiteralValue(left < right);
                 }
-                else if(opType == Token::Type::NOT_EQUAL) {
-                    return MiniParse::Token::LiteralValue(comLeft != comRight);
+                else if(opType == Type::NOT_EQUAL) {
+                    return Token::LiteralValue(left != right);
                 }
-                else if(opType == Token::Type::EQUAL_EQUAL) {
-                    return MiniParse::Token::LiteralValue(comLeft == comRight);
+                else if(opType == Type::EQUAL_EQUAL) {
+                    return Token::LiteralValue(left == right);
                 }
-                else {
-                    throw std::runtime_error("Unsupported binary operation");
+                else if constexpr(std::is_integral_v<decltype(left)> && std::is_integral_v<decltype(right)>) {
+                    if(opType == Type::PERCENT) {
+                        return left % right;
+                    }
+                    else if(opType == Type::SHIFT_LEFT) {
+                        return left << right;
+                    }
+                    else if(opType == Type::SHIFT_RIGHT) {
+                        return left >> right;
+                    }
+                    else if(opType == Type::CARET) {
+                        return Token::LiteralValue(left ^ right);
+                    }
+                    else if(opType == Type::AMPERSAND) {
+                        return Token::LiteralValue(left & right);
+                    }
+                    else if(opType == Type::PIPE) {
+                        return Token::LiteralValue(left | right);
+                    }
                 }
+                throw std::runtime_error("Unsupported binary operation");
             },
-            [](std::monostate, std::monostate) { return MiniParse::Token::LiteralValue(); },
-            [](std::monostate, auto) { return MiniParse::Token::LiteralValue(); },
-            [](auto, std::monostate) { return MiniParse::Token::LiteralValue(); }},
+            [](std::monostate, std::monostate)->Token::LiteralValue { throw std::runtime_error("Invalid operand"); },
+            [](std::monostate, auto)->Token::LiteralValue { throw std::runtime_error("Invalid operand"); },
+            [](auto, std::monostate)->Token::LiteralValue { throw std::runtime_error("Invalid operand"); }},
         leftValue, rightValue);
+#ifdef _WIN32
+    #pragma warning(pop)
+#endif
 }
 //---------------------------------------------------------------------------
 void Interpreter::visit(const Expression::Call &call)
@@ -366,40 +404,42 @@ void Interpreter::visit(const Expression::Variable &variable)
 //---------------------------------------------------------------------------
 void Interpreter::visit(const Expression::Unary &unary)
 {
-    assert(false);
+#ifdef _WIN32
+    #pragma warning(push)
+    #pragma warning(disable: 4146)  // unary minus operator applied to unsigned type, result still unsigned
+    #pragma warning(disable: 4804)  // '~': unsafe use of type 'bool' in operation
+#endif
+    using Type = Token::Type;
 
-    if(unary.getOperator().type == Token::Type::PLUS) {
-        // **TODO** Some sort of type promotion happens here
-        //m_Value = rightValue;
-    }
-    /*else if(unary.getOperator().type == Token::Type::MINUS) {
-        m_Value = std::visit(
-            overload{
-                [](auto x) { return -x; },
-                [](std::monostate) { return Token::LiteralValue(); }},
-                rightValue);
-    }
-    else if(unary.getOperator().type == Token::Type::TILDA) {
-        m_Value = std::visit(
-            [](auto x)
+    auto rightValue = evaluate(unary.getRight());
+
+    const auto opType = unary.getOperator().type;
+    m_Value = std::visit(
+        Utils::Overload{
+            [opType](auto right)->Token::LiteralValue
             {
-                if constexpr(std::is_integral_v<decltype(x)>) {
-                    return ~x;
+                if(opType == Type::PLUS) {
+                    return Token::LiteralValue(+right);
                 }
-                else {
-                    return Token::LiteralValue();
+                else if(opType == Type::MINUS) {
+                    return Token::LiteralValue(-right);
                 }
-            }, 
-            rightValue);
-    }*/
-    else if(unary.getOperator().type == Token::Type::NOT) {
-        /*m_Value = std::visit(
-            overload{
-                [](auto x) { return !static_cast<bool>(x); },
-                [](std::monostate) { return Token::LiteralValue(); }},
-                rightValue);*/
-    }
+                else if(opType == Type::NOT) {
+                    return Token::LiteralValue(!right);
+                }
+                else if constexpr(std::is_integral_v<decltype(right)>) {
+                    if(opType == Type::TILDA) {
+                        return Token::LiteralValue(~right);
+                    }
+                }
 
+                throw std::runtime_error("Unsupported unary operation");
+            },
+            [](std::monostate)->Token::LiteralValue { throw std::runtime_error("Invalid operand"); }},
+        rightValue);
+#ifdef _WIN32
+    #pragma warning(pop)
+#endif
 }
 //---------------------------------------------------------------------------
 void Interpreter::visit(const Statement::Compound &compound)
