@@ -315,15 +315,51 @@ void scanToken(ScanState &scanState, std::vector<Token> &tokens)
         // Operators
         case '!': emplaceToken(tokens, scanState.match('=') ? Token::Type::NOT_EQUAL : Token::Type::NOT, scanState); break;
         case '=': emplaceToken(tokens, scanState.match('=') ? Token::Type::EQUAL_EQUAL : Token::Type::EQUAL, scanState); break;
-        case '<': emplaceToken(tokens, scanState.match('=') ? Token::Type::LESS_EQUAL : Token::Type::LESS, scanState); break;
-        case '>': emplaceToken(tokens, scanState.match('=') ? Token::Type::GREATER_EQUAL : Token::Type::GREATER, scanState); break;
-
+       
         // Assignment operators
         case '*': emplaceToken(tokens, scanState.match('=') ? Token::Type::STAR_EQUAL : Token::Type::STAR, scanState); break;
         //case '/': emplaceToken(tokens, scanState.match('=') ? Token::Type::SLASH_EQUAL : Token::Type::SLASH, scanState); break;
         case '%': emplaceToken(tokens, scanState.match('=') ? Token::Type::PERCENT_EQUAL : Token::Type::PERCENT, scanState); break;
         case '^': emplaceToken(tokens, scanState.match('=') ? Token::Type::CARET_EQUAL : Token::Type::CARET, scanState); break;
         
+        case '<': 
+        {
+            if(scanState.match('=')) {
+                emplaceToken(tokens, Token::Type::LESS_EQUAL, scanState);
+            }
+            else if(scanState.match('<')) {
+                if(scanState.match('=')) {
+                    emplaceToken(tokens, Token::Type::SHIFT_LEFT_EQUAL, scanState);
+                }
+                else {
+                    emplaceToken(tokens, Token::Type::SHIFT_LEFT, scanState);
+                }
+            }
+            else {
+                emplaceToken(tokens, Token::Type::LESS, scanState);
+            }
+            break;
+        }
+
+        case '>': 
+        {
+            if(scanState.match('=')) {
+                emplaceToken(tokens, Token::Type::GREATER_EQUAL, scanState);
+            }
+            else if(scanState.match('<')) {
+                if(scanState.match('=')) {
+                    emplaceToken(tokens, Token::Type::SHIFT_RIGHT_EQUAL, scanState);
+                }
+                else {
+                    emplaceToken(tokens, Token::Type::SHIFT_RIGHT, scanState);
+                }
+            }
+            else {
+                emplaceToken(tokens, Token::Type::GREATER, scanState);
+            }
+            break;
+        }
+
         case '+':
         {
             if(scanState.match('=')) {

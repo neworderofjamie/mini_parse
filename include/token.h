@@ -30,7 +30,10 @@ struct Token
         EQUAL, STAR_EQUAL, SLASH_EQUAL, PERCENT_EQUAL, PLUS_EQUAL,
         MINUS_EQUAL, AMPERSAND_EQUAL, CARET_EQUAL, PIPE_EQUAL,
         PIPE_PIPE, AMPERSAND_AMPERSAND, PLUS_PLUS, MINUS_MINUS,
-        // **TODO** <<= and >>=
+        SHIFT_LEFT, SHIFT_RIGHT,
+
+        // Three character tokens
+        SHIFT_LEFT_EQUAL, SHIFT_RIGHT_EQUAL,
 
         // Literals   
         IDENTIFIER, NUMBER,
