@@ -507,9 +507,10 @@ Expression::ExpressionPtr parseAssignment(ParserState &parserState)
 Expression::ExpressionPtr parseExpression(ParserState &parserState)
 {
     // expression ::=
-    //      assignment-expression                   // **TODO**
-    //      expression "," assignment-expression    // **TODO**
-    return parseAssignment(parserState);
+    //      assignment-expression
+    //      expression "," assignment-expression
+    return parseBinary(parserState, parseAssignment, 
+                       {Token::Type::COMMA});
 }
 
 Statement::StatementPtr parseCompoundStatement(ParserState &parserState)
