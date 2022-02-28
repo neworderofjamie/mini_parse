@@ -289,7 +289,7 @@ Expression::ExpressionPtr parseCast(ParserState &parserState)
 {
     // cast-expression ::=
     //      unary-expression
-    //      "(" type-name ")" cast-parseExpression
+    //      "(" type-name ")" cast-parseExpression  // **TODO**
     return parseUnary(parserState);
 }
 
@@ -320,7 +320,8 @@ Expression::ExpressionPtr parseShift(ParserState &parserState)
     //      additive-expression
     //      shift-parseExpression "<<" additive-parseExpression
     //      shift-parseExpression ">>" additive-parseExpression
-    return parseAdditive(parserState);
+    return parseBinary(parserState, parseAdditive, 
+                       {Token::Type::SHIFT_LEFT, Token::Type::SHIFT_RIGHT});
 }
 
 Expression::ExpressionPtr parseRelational(ParserState &parserState)
@@ -345,6 +346,29 @@ Expression::ExpressionPtr parseEquality(ParserState &parserState)
     return parseBinary(parserState, parseRelational, 
                        {Token::Type::NOT_EQUAL, Token::Type::EQUAL_EQUAL});
 }
+Expression::ExpressionPtr parseAnd(ParserState &parserState)
+{
+    // AND-expression ::=
+    //      equality-expression
+    //      AND-expression "&" equality-expression
+    return parseBinary(parserState, parseEquality, {Token::Type::AMPERSAND});
+}
+
+Expression::ExpressionPtr parseXor(ParserState &parserState)
+{
+    // exclusive-OR-expression ::=
+    //      AND-expression
+    //      exclusive-OR-expression "^" AND-expression
+    return parseBinary(parserState, parseAnd, {Token::Type::CARET});
+}
+
+Expression::ExpressionPtr parseOr(ParserState &parserState)
+{
+    // inclusive-OR-expression ::=
+    //      exclusive-OR-expression
+    //      inclusive-OR-expression "|" exclusive-OR-expression
+    return parseBinary(parserState, parseXor, {Token::Type::PIPE});
+}
 
 Expression::ExpressionPtr parseLogicalAnd(ParserState &parserState)
 {
@@ -352,11 +376,11 @@ Expression::ExpressionPtr parseLogicalAnd(ParserState &parserState)
     //      inclusive-OR-expression
     //      logical-AND-expression "&&" inclusive-OR-expression
     // **THINK** parseLogicalAnd here (obviously) stack-overflows - why is this the grammar?
-    auto expression = parseEquality(parserState);
+    auto expression = parseOr(parserState);
 
     while(parserState.match(Token::Type::AMPERSAND_AMPERSAND)) {
         Token op = parserState.previous();
-        auto right = parseEquality(parserState);
+        auto right = parseOr(parserState);
         expression = std::make_unique<Expression::Logical>(std::move(expression), op, std::move(right));
     }
     return expression;
