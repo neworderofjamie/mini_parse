@@ -265,7 +265,10 @@ void Interpreter::visit(const Expression::Binary &binary)
         Utils::Overload{
             [opType](auto left, auto right)->Token::LiteralValue
             {
-                if(opType == Type::PLUS) {
+                if(opType == Type::COMMA) {
+                    return Token::LiteralValue(right);
+                }
+                else if(opType == Type::PLUS) {
                     return Token::LiteralValue(left + right);
                 }
                 else if(opType == Type::MINUS) {
@@ -347,6 +350,13 @@ void Interpreter::visit(const Expression::Call &call)
 
     // Call function and save result
     m_Value = callable.get().call(arguments);
+}
+//---------------------------------------------------------------------------
+void Interpreter::visit(const Expression::Cast &cast)
+{
+    m_Value = evaluate(cast.getExpression());
+
+    assert(false);
 }
 //---------------------------------------------------------------------------
 void Interpreter::visit(const Expression::Conditional &conditional)
