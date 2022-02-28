@@ -32,7 +32,7 @@ const Type::Base *TypeChecker::Environment::assign(const Token &name, const Type
             throw std::runtime_error("Undefined variable '" + std::string{name.lexeme} + "' at line " + std::to_string(name.line));
         }
         else {
-            m_Enclosing->assign(name, type);
+            return m_Enclosing->assign(name, type);
         }
     }
     // Otherwise, if type is found and it's const, give error
@@ -53,7 +53,7 @@ const Type::Base *TypeChecker::Environment::incDec(const Token &name)
             throw std::runtime_error("Undefined variable '" + std::string{name.lexeme} + "' at line " + std::to_string(name.line));
         }
         else {
-            m_Enclosing->incDec(name);
+            return m_Enclosing->incDec(name);
         }
     }
     // Otherwise, if type is found and it's const, give error
@@ -187,6 +187,11 @@ void TypeChecker::visit(const Expression::Logical &logical)
 void TypeChecker::visit(const Expression::PostfixIncDec &postfixIncDec)
 {
     m_Type = m_Environment->incDec(postfixIncDec.getVarName());
+}
+//---------------------------------------------------------------------------
+void TypeChecker::visit(const Expression::PrefixIncDec &prefixIncDec)
+{
+    m_Type = m_Environment->incDec(prefixIncDec.getVarName());
 }
 //---------------------------------------------------------------------------
 void TypeChecker::visit(const Expression::Variable &variable)

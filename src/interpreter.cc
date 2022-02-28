@@ -351,7 +351,12 @@ void Interpreter::visit(const Expression::Logical &logical)
 //---------------------------------------------------------------------------
 void Interpreter::visit(const Expression::PostfixIncDec &postfixIncDec)
 {
-    m_Environment->postfixIncDec(postfixIncDec.getVarName(), postfixIncDec.getOperator().type);
+    m_Value = m_Environment->postfixIncDec(postfixIncDec.getVarName(), postfixIncDec.getOperator().type);
+}
+//---------------------------------------------------------------------------
+void Interpreter::visit(const Expression::PrefixIncDec &prefixIncDec)
+{
+    m_Value = m_Environment->prefixIncDec(prefixIncDec.getVarName(), prefixIncDec.getOperator().type);
 }
 //---------------------------------------------------------------------------
 void Interpreter::visit(const Expression::Variable &variable)

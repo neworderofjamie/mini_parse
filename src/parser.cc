@@ -256,8 +256,8 @@ Expression::ExpressionPtr parseUnary(ParserState &parserState)
 {
     // unary-expression ::=
     //      postfix-expression
-    //      "++" unary-expression           **TODO** 
-    //      "--" unary-expression           **TODO** 
+    //      "++" unary-expression
+    //      "--" unary-expression
     //      "+" cast-expression
     //      "-" cast-expression
     //      "~" cast-expression
@@ -267,6 +267,19 @@ Expression::ExpressionPtr parseUnary(ParserState &parserState)
     if(parserState.match({Token::Type::PLUS, Token::Type::MINUS, Token::Type::TILDA, Token::Type::NOT})) {
         Token op = parserState.previous();
         return std::make_unique<Expression::Unary>(op, parseUnary(parserState));
+    }
+    else if(parserState.match({Token::Type::PLUS_PLUS, Token::Type::MINUS_MINUS})) {
+        Token op = parserState.previous();
+        auto expression = parseUnary(parserState);
+
+        // **TODO** everything all the way up(?) from unary are l-value so can be used - not just variable
+        auto expressionVariable = dynamic_cast<const Expression::Variable*>(expression.get());
+        if(expressionVariable != nullptr) {
+            return std::make_unique<Expression::PrefixIncDec>(expressionVariable->getName(), op);
+        }
+        else {
+            parserState.error(op, "Invalid prefix target");
+        }
     }
 
     return parsePostfix(parserState);
