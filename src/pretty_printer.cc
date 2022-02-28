@@ -46,9 +46,19 @@ void PrettyPrinter::visit(const Expression::Call &call)
     m_StringStream << ")";
 }
 //---------------------------------------------------------------------------
+void PrettyPrinter::visit(const Expression::Cast &cast)
+{
+    m_StringStream << "(" << cast.getType()->getTypeName() << ")";
+    cast.getExpression()->accept(*this);
+}
+//---------------------------------------------------------------------------
 void PrettyPrinter::visit(const Expression::Conditional &conditional)
 {
-
+    conditional.getCondition()->accept(*this);
+    m_StringStream << " ? ";
+    conditional.getTrue()->accept(*this);
+    m_StringStream << " : ";
+    conditional.getFalse()->accept(*this);
 }
 //---------------------------------------------------------------------------
 void PrettyPrinter::visit(const Expression::Grouping &grouping)
@@ -91,7 +101,7 @@ void PrettyPrinter::visit(const Expression::Variable &variable)
 //---------------------------------------------------------------------------
 void PrettyPrinter::visit(const Expression::Unary &unary)
 {
-    m_StringStream << " " << unary.getOperator().lexeme << " ";
+    m_StringStream << unary.getOperator().lexeme;
     unary.getRight()->accept(*this);
 }
 //---------------------------------------------------------------------------

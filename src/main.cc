@@ -51,7 +51,7 @@ std::string test3(
     "double Imem;\n"
     "unsigned int mt;\n"
     "double mdt= DT/25.0;\n"
-    "for (mt=0; mt < 25; mt=mt+1) {\n"
+    "for (mt=0; mt < 25; mt++) {\n"
     "   Imem= -($(m)*$(m)*$(m)*$(h)*$(gNa)*($(V)-($(ENa)))+\n"
     "       $(n)*$(n)*$(n)*$(n)*$(gK)*($(V)-($(EK)))+\n"
     "       $(gl)*($(V)-($(El)))-$(Isyn));\n"
@@ -148,10 +148,10 @@ int main()
     try
     {
         // Scan
-        const std::string source = removeOldStyleVar(test3);
+        /*const std::string source = removeOldStyleVar(test3);
         const auto tokens = MiniParse::Scanner::scanSource(
             source, errorHandler);
-       /*const auto tokens = MiniParse::Scanner::scanSource(
+        const auto tokens = MiniParse::Scanner::scanSource(
             "int x = 4, y;\n"
             "print ((12 + x) * 5) + 3;\n"
             "y = 12;\n"
@@ -173,12 +173,14 @@ int main()
         const auto tokens = MiniParse::Scanner::scanSource(
             "double x = 2.0f;\n"
             "print x;\n"
-            "print sqrt(x);\n", errorHandler);
+            "print sqrt(x);\n", errorHandler);*/
         const auto tokens = Scanner::scanSource(
-            "for(float x = 0.0f; x < 10.0f; x = x + 1.0f) {\n"
+            "for(float x = -10.0f; x < 10.0f; x++) {\n"
             "   print x;\n"
-            "   print sqrt(x);\n"
-            "}\n", errorHandler);*/
+            "   const float y = (x < 0.0f) ? (-x * x) : (x * x);\n"
+            "   print y;\n"
+            "   print (int)y;\n"
+            "}\n", errorHandler);
         // Parse
         auto statements = Parser::parseStatements(tokens, errorHandler);
         
@@ -198,9 +200,9 @@ int main()
         typeEnvironment.define<Type::Double>("h");
         typeEnvironment.define<Type::Double>("n");
         typeEnvironment.define<Type::Exp>("exp");
+        typeEnvironment.define<Type::Sqrt>("sqrt");
         typeChecker.typeCheck(statements, typeEnvironment);
-        
-        std::cout << Type::Exp::getInstance()->getTypeName() << std::endl;
+       
         PrettyPrinter printer;
         std::cout << printer.print(statements) << std::endl;
         

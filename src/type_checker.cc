@@ -149,6 +149,11 @@ void TypeChecker::visit(const Expression::Call &call)
     }
 }
 //---------------------------------------------------------------------------
+void TypeChecker::visit(const Expression::Cast &cast)
+{
+    m_Type = cast.getType();
+}
+//---------------------------------------------------------------------------
 void TypeChecker::visit(const Expression::Conditional &conditional)
 {
     auto trueType = evaluateType(conditional.getTrue());

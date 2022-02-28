@@ -73,6 +73,15 @@ public:
         return previous();
     }
 
+    Token rewind()
+    {
+        if(m_Current > 0) {
+            m_Current--;
+        }
+
+        return peek();
+    }
+
     Token peek() const
     {
         return m_Tokens.at(m_Current);
@@ -166,6 +175,36 @@ Expression::ExpressionPtr parseBinary(ParserState &parserState, N nonTerminal, s
     }
 
     return expression;
+}
+
+std::tuple<const Type::NumericBase*, bool> parseDeclarationSpecifiers(ParserState &parserState)
+{
+    // Loop through type qualifier and specifier tokens
+    std::set<std::string_view> typeQualifiers{};
+    std::set<std::string_view> typeSpecifiers{};
+    do {
+        // Add token lexeme to appropriate set, giving error if duplicate 
+        if(parserState.previous().type == Token::Type::TYPE_QUALIFIER) {
+            if(!typeQualifiers.insert(parserState.previous().lexeme).second) {
+                parserState.error(parserState.previous(), "duplicate type qualifier");
+            }
+        }
+        else {
+            if(!typeSpecifiers.insert(parserState.previous().lexeme).second) {
+                parserState.error(parserState.previous(), "duplicate type specifier");
+            }
+        }
+    } while(parserState.match({Token::Type::TYPE_QUALIFIER, Token::Type::TYPE_SPECIFIER}));
+    
+    // Lookup type
+    const auto *type = Type::getNumericType(typeSpecifiers);
+    if(type == nullptr) {
+        parserState.error("Unknown type specifier");
+    }
+
+    // Determine constness
+    // **NOTE** this only works as const is the ONLY supported qualifier
+    return std::make_tuple(type, !typeQualifiers.empty());
 }
 
 Expression::ExpressionPtr parsePrimary(ParserState &parserState)
@@ -289,7 +328,26 @@ Expression::ExpressionPtr parseCast(ParserState &parserState)
 {
     // cast-expression ::=
     //      unary-expression
-    //      "(" type-name ")" cast-parseExpression  // **TODO**
+    //      "(" type-name ")" cast-expression
+
+    // If next token is a left parenthesis
+    if(parserState.match(Token::Type::LEFT_PAREN)) {
+        // If this is followed by some part of a type declarator
+        if(parserState.match({Token::Type::TYPE_QUALIFIER, Token::Type::TYPE_SPECIFIER})) {
+            // Parse declaration specifiers
+            const auto [type, isConst] = parseDeclarationSpecifiers(parserState);
+
+            parserState.consume(Token::Type::RIGHT_PAREN, "Expect ')' after cast type.");
+
+            return std::make_unique<Expression::Cast>(type, parseCast(parserState));
+        }
+        // Otherwise, rewind parser state so left parenthesis can be parsed again
+        // **YUCK**
+        else {
+            parserState.rewind();
+        }
+    }
+
     return parseUnary(parserState);
 }
 
@@ -645,32 +703,8 @@ std::unique_ptr<const Statement::Base> parseDeclaration(ParserState &parserState
     // type-qualifier ::=
     //      "const"
 
-    // Loop through type qualifier and specifier tokens
-    std::set<std::string_view> typeQualifiers{};
-    std::set<std::string_view> typeSpecifiers{};
-    do {
-        // Add token lexeme to appropriate set, giving error if duplicate 
-        if(parserState.previous().type == Token::Type::TYPE_QUALIFIER) {
-            if(!typeQualifiers.insert(parserState.previous().lexeme).second) {
-                parserState.error(parserState.previous(), "duplicate type qualifier");
-            }
-        }
-        else {
-            if(!typeSpecifiers.insert(parserState.previous().lexeme).second) {
-                parserState.error(parserState.previous(), "duplicate type specifier");
-            }
-        }
-    } while(parserState.match({Token::Type::TYPE_QUALIFIER, Token::Type::TYPE_SPECIFIER}));
-    
-    // Lookup type
-    const auto *type = Type::getNumericType(typeSpecifiers);
-    if(type == nullptr) {
-        parserState.error("Unknown type specifier");
-    }
-
-    // Determine constness
-    // **NOTE** this only works as const is the ONLY supported qualifier
-    const bool isConst = !typeQualifiers.empty();
+    // Parse declaration specifiers
+    const auto [type, isConst] = parseDeclarationSpecifiers(parserState);
 
     // Read init declarator list
     std::vector<std::tuple<Token, Expression::ExpressionPtr>> initDeclaratorList;

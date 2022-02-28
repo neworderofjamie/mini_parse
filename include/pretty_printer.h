@@ -27,6 +27,7 @@ public:
     virtual void visit(const Expression::Assignment &assignement) override;
     virtual void visit(const Expression::Binary &binary) override;
     virtual void visit(const Expression::Call &call) override;
+    virtual void visit(const Expression::Cast &cast) override;
     virtual void visit(const Expression::Conditional &conditional) override;
     virtual void visit(const Expression::Grouping &grouping) override;
     virtual void visit(const Expression::Literal &literal) override;

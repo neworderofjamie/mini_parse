@@ -12,6 +12,10 @@ namespace MiniParse::Expression
 {
 class Visitor;
 }
+namespace Type
+{
+class NumericBase;
+}
 
 //---------------------------------------------------------------------------
 // MiniParse::Expression::Base
@@ -70,7 +74,6 @@ private:
     const ExpressionPtr m_Right;
 };
 
-
 //---------------------------------------------------------------------------
 // MiniParse::Expression::Call
 //---------------------------------------------------------------------------
@@ -91,6 +94,26 @@ private:
     const ExpressionPtr m_Callee;
     const Token m_ClosingParen;
     const ExpressionList m_Arguments;
+};
+
+//---------------------------------------------------------------------------
+// MiniParse::Expression::Cast
+//---------------------------------------------------------------------------
+class Cast : public Base
+{
+public:
+    Cast(const Type::NumericBase *type, ExpressionPtr expression)
+    :  m_Type(type), m_Expression(std::move(expression))
+    {}
+
+    virtual void accept(Visitor &visitor) const override;
+
+    const Base *getExpression() const { return m_Expression.get(); }
+    const Type::NumericBase *getType() const { return m_Type; }
+    
+private:
+    const Type::NumericBase *m_Type;
+    const ExpressionPtr m_Expression;
 };
 
 //---------------------------------------------------------------------------
@@ -261,6 +284,7 @@ public:
     virtual void visit(const Assignment &assignement) = 0;
     virtual void visit(const Binary &binary) = 0;
     virtual void visit(const Call &call) = 0;
+    virtual void visit(const Cast &cast) = 0;
     virtual void visit(const Conditional &conditional) = 0;
     virtual void visit(const Grouping &grouping) = 0;
     virtual void visit(const Literal &literal) = 0;
