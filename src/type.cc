@@ -57,6 +57,7 @@ IMPLEMENT_TYPE(Double);
 
 // Implement foreign function types
 IMPLEMENT_TYPE(Exp);
+IMPLEMENT_TYPE(Sqrt);
 
 //----------------------------------------------------------------------------
 // Free functions

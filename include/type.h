@@ -240,6 +240,7 @@ DECLARE_NUMERIC_TYPE(Double, double, 60);
 // Declare standard library foreign function types
 //----------------------------------------------------------------------------
 DECLARE_FOREIGN_FUNCTION_TYPE(Exp, Double, Double);
+DECLARE_FOREIGN_FUNCTION_TYPE(Sqrt, Double, Double);
 
 //! Look up type based on set of type specifiers
 const NumericBase *getNumericType(const std::set<std::string_view> &typeSpecifiers);
