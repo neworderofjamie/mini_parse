@@ -24,7 +24,7 @@ void TypeChecker::Environment::define(const Token &name, const Type::Base *type,
     }
 }
 //---------------------------------------------------------------------------
-void TypeChecker::Environment::assign(const Token &name, const Type::Base *type)
+const Type::Base *TypeChecker::Environment::assign(const Token &name, const Type::Base *type)
 {
     auto existingType = m_Types.find(name.lexeme);
     if(existingType == m_Types.end()) {
@@ -38,6 +38,31 @@ void TypeChecker::Environment::assign(const Token &name, const Type::Base *type)
     // Otherwise, if type is found and it's const, give error
     else if(std::get<1>(existingType->second)) {
         throw std::runtime_error("assignment of read-only variable '" + std::string{name.lexeme} + "'");
+    }
+    // Otherwise, return type
+    else {
+        return std::get<0>(existingType->second);
+    }
+}
+//---------------------------------------------------------------------------
+const Type::Base *TypeChecker::Environment::incDec(const Token &name)
+{
+    auto existingType = m_Types.find(name.lexeme);
+    if(existingType == m_Types.end()) {
+        if(m_Enclosing == nullptr) {
+            throw std::runtime_error("Undefined variable '" + std::string{name.lexeme} + "' at line " + std::to_string(name.line));
+        }
+        else {
+            m_Enclosing->incDec(name);
+        }
+    }
+    // Otherwise, if type is found and it's const, give error
+    else if(std::get<1>(existingType->second)) {
+        throw std::runtime_error("increment/decrement of read-only variable '" + std::string{name.lexeme} + "'");
+    }
+    // Otherwise, return type
+    else {
+        return std::get<0>(existingType->second);
     }
 }
 //---------------------------------------------------------------------------
@@ -73,7 +98,7 @@ void TypeChecker::typeCheck(const Statement::StatementList &statements, Environm
 void TypeChecker::visit(const Expression::Assignment &assignment)
 {
     auto rhsType = evaluateType(assignment.getValue());
-    m_Environment->assign(assignment.getVarName(), rhsType);
+    m_Type = m_Environment->assign(assignment.getVarName(), rhsType);
 }
 //---------------------------------------------------------------------------
 void TypeChecker::visit(const Expression::Binary &binary)
@@ -157,6 +182,11 @@ void TypeChecker::visit(const Expression::Logical &logical)
     logical.getLeft()->accept(*this);
     logical.getRight()->accept(*this);
     m_Type = Type::Int32::getInstance();
+}
+//---------------------------------------------------------------------------
+void TypeChecker::visit(const Expression::PostfixIncDec &postfixIncDec)
+{
+    m_Type = m_Environment->incDec(postfixIncDec.getVarName());
 }
 //---------------------------------------------------------------------------
 void TypeChecker::visit(const Expression::Variable &variable)

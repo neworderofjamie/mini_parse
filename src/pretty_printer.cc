@@ -74,6 +74,11 @@ void PrettyPrinter::visit(const Expression::Logical &logical)
     logical.getRight()->accept(*this);
 }
 //---------------------------------------------------------------------------
+void PrettyPrinter::visit(const Expression::PostfixIncDec &postfixIncDec)
+{
+    m_StringStream << postfixIncDec.getVarName().lexeme << postfixIncDec.getOperator().lexeme;
+}
+//---------------------------------------------------------------------------
 void PrettyPrinter::visit(const Expression::Variable &variable)
 {
     m_StringStream << variable.getName().lexeme;

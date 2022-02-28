@@ -47,7 +47,7 @@ void Interpreter::Environment::define(std::string_view name, Callable &callable)
     }
 }
 //---------------------------------------------------------------------------
-void Interpreter::Environment::assign(const Token &name, Token::LiteralValue value, Token::Type op)
+Interpreter::Value Interpreter::Environment::assign(const Token &name, Token::LiteralValue value, Token::Type op)
 {
     auto variable = m_Values.find(name.lexeme);
     if(variable == m_Values.end()) {
@@ -55,11 +55,11 @@ void Interpreter::Environment::assign(const Token &name, Token::LiteralValue val
             throw std::runtime_error("Undefined variable '" + std::string{name.lexeme} + "' at line " + std::to_string(name.line));
         }
         else {
-            m_Enclosing->assign(name, value, op);
+            return m_Enclosing->assign(name, value, op);
         }
     }
     else {
-        std::get<Token::LiteralValue>(variable->second) = std::visit(
+        auto newValue = std::visit(
             Utils::Overload{
                 [op](auto variable, auto assign)
                 { 
@@ -109,6 +109,81 @@ void Interpreter::Environment::assign(const Token &name, Token::LiteralValue val
                 },
                 [](auto, std::monostate) { return MiniParse::Token::LiteralValue(); }},
             std::get<Token::LiteralValue>(variable->second), value);
+
+        // Update environemnt with new value and return
+        std::get<Token::LiteralValue>(variable->second) = newValue;
+        return newValue;
+    }
+}
+//---------------------------------------------------------------------------
+Interpreter::Value Interpreter::Environment::prefixIncDec(const Token &name, Token::Type op)
+{
+    auto variable = m_Values.find(name.lexeme);
+    if(variable == m_Values.end()) {
+        if(m_Enclosing == nullptr) {
+            throw std::runtime_error("Undefined variable '" + std::string{name.lexeme} + "' at line " + std::to_string(name.line));
+        }
+        else {
+            return m_Enclosing->prefixIncDec(name, op);
+        }
+    }
+    else {
+        // Perform operation on variable value
+        std::get<Token::LiteralValue>(variable->second) = std::visit(
+            Utils::Overload{
+                [op](auto variable)
+                { 
+                    if(op == Token::Type::PLUS_PLUS) {
+                        return MiniParse::Token::LiteralValue(variable + 1);
+                    }
+                    else if(op == Token::Type::MINUS_MINUS) {
+                        return MiniParse::Token::LiteralValue(variable - 1);
+                    }
+                    else {
+                        throw std::runtime_error("Unsupported prefix operation");
+                    }
+                },
+                [](std::monostate) { return MiniParse::Token::LiteralValue(); }},
+            std::get<Token::LiteralValue>(variable->second));
+
+        // Return updated value
+        return std::get<Token::LiteralValue>(variable->second);
+    }
+}
+//---------------------------------------------------------------------------
+Interpreter::Value Interpreter::Environment::postfixIncDec(const Token &name, Token::Type op)
+{
+    auto variable = m_Values.find(name.lexeme);
+    if(variable == m_Values.end()) {
+        if(m_Enclosing == nullptr) {
+            throw std::runtime_error("Undefined variable '" + std::string{name.lexeme} + "' at line " + std::to_string(name.line));
+        }
+        else {
+            return m_Enclosing->postfixIncDec(name, op);
+        }
+    }
+    else {
+        // Perform operation on variable value
+        const auto prevValue = std::get<Token::LiteralValue>(variable->second);
+        std::get<Token::LiteralValue>(variable->second) = std::visit(
+            Utils::Overload{
+                [op](auto variable)
+                { 
+                    if(op == Token::Type::PLUS_PLUS) {
+                        return MiniParse::Token::LiteralValue(variable + 1);
+                    }
+                    else if(op == Token::Type::MINUS_MINUS) {
+                        return MiniParse::Token::LiteralValue(variable - 1);
+                    }
+                    else {
+                        throw std::runtime_error("Unsupported postfix operation");
+                    }
+                },
+                [](std::monostate) { return MiniParse::Token::LiteralValue(); }},
+            std::get<Token::LiteralValue>(variable->second));
+
+        // Return previous value
+        return prevValue;
     }
 }
 //---------------------------------------------------------------------------
@@ -150,7 +225,7 @@ void Interpreter::interpret(const Statement::StatementList &statements, Environm
 void Interpreter::visit(const Expression::Assignment &assignment)
 {
     auto value = evaluate(assignment.getValue());
-    m_Environment->assign(assignment.getVarName(), value, assignment.getOperator().type);
+    m_Value = m_Environment->assign(assignment.getVarName(), value, assignment.getOperator().type);
 }
 //---------------------------------------------------------------------------
 void Interpreter::visit(const Expression::Binary &binary)
@@ -272,6 +347,11 @@ void Interpreter::visit(const Expression::Logical &logical)
             m_Value = (int)isTruthy(evaluate(logical.getRight()));
         }
     }
+}
+//---------------------------------------------------------------------------
+void Interpreter::visit(const Expression::PostfixIncDec &postfixIncDec)
+{
+    m_Environment->postfixIncDec(postfixIncDec.getVarName(), postfixIncDec.getOperator().type);
 }
 //---------------------------------------------------------------------------
 void Interpreter::visit(const Expression::Variable &variable)

@@ -46,7 +46,13 @@ public:
         void define(std::string_view name, Callable &callable);
 
         // **TODO** type
-        void assign(const Token &name, Token::LiteralValue value, Token::Type op);
+        Value assign(const Token &name, Token::LiteralValue value, Token::Type op);
+
+        // **TODO** type
+        Value prefixIncDec(const Token &name, Token::Type op);
+
+        // **TODO** type
+        Value postfixIncDec(const Token &name, Token::Type op);
 
         // **TODO** type
         Value get(const Token &name) const;
@@ -76,6 +82,7 @@ public:
     virtual void visit(const Expression::Grouping &grouping) override;
     virtual void visit(const Expression::Literal &literal) override;
     virtual void visit(const Expression::Logical &logical) override;
+    virtual void visit(const Expression::PostfixIncDec &postfixIncDec) override;
     virtual void visit(const Expression::Variable &variable) override;
     virtual void visit(const Expression::Unary &unary) override;
     

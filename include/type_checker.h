@@ -45,7 +45,8 @@ public:
             }
         }
         void define(const Token &name, const Type::Base *type, bool isConst = false);
-        void assign(const Token &name, const Type::Base *type);
+        const Type::Base *assign(const Token &name, const Type::Base *type);
+        const Type::Base *incDec(const Token &name);
         std::tuple<const Type::Base*, bool> getType(const Token &name) const;
 
     private:
@@ -72,6 +73,7 @@ public:
     virtual void visit(const Expression::Grouping &grouping) override;
     virtual void visit(const Expression::Literal &literal) override;
     virtual void visit(const Expression::Logical &logical) override;
+    virtual void visit(const Expression::PostfixIncDec &postfixIncDec) override;
     virtual void visit(const Expression::Variable &variable) override;
     virtual void visit(const Expression::Unary &unary) override;
 
