@@ -203,8 +203,8 @@ Expression::ExpressionPtr parsePostfix(ParserState &parserState)
     //      primary-expression
     //      postfix-expression "[" expression "]"   // **TODO**
     //      postfix-expression "(" argument-expression-list? ")"
-    //      postfix-expression "++"   // **TODO**
-    //      postfix-expression "--"   // **TODO**
+    //      postfix-expression "++"
+    //      postfix-expression "--"
 
     // argument-expression-list ::=
     //      assignment-expression
@@ -230,6 +230,18 @@ Expression::ExpressionPtr parsePostfix(ParserState &parserState)
             expression = std::make_unique<Expression::Call>(std::move(expression),
                                                             closingParen,
                                                             std::move(arguments));
+        }
+        else if(parserState.match({Token::Type::PLUS_PLUS, Token::Type::MINUS_MINUS})) {
+            Token op = parserState.previous();
+
+            // **TODO** everything all the way up(?) from unary are l-value so can be used - not just variable
+            auto expressionVariable = dynamic_cast<const Expression::Variable*>(expression.get());
+            if(expressionVariable != nullptr) {
+                return std::make_unique<Expression::PostfixIncDec>(expressionVariable->getName(), op);
+            }
+            else {
+                parserState.error(op, "Invalid postfix target");
+            }
         }
         else {
             break;

@@ -151,7 +151,6 @@ private:
     const Token::LiteralValue m_Value;
 };
 
-
 //---------------------------------------------------------------------------
 // MiniParse::Expression::Logical
 //---------------------------------------------------------------------------
@@ -172,6 +171,26 @@ private:
     const ExpressionPtr m_Left;
     const Token m_Operator;
     const ExpressionPtr m_Right;
+};
+
+//---------------------------------------------------------------------------
+// MiniParse::Expression::PostfixIncDec
+//---------------------------------------------------------------------------
+class PostfixIncDec : public Base
+{
+public:
+    PostfixIncDec(Token varName, Token op)
+    :  m_VarName(varName), m_Operator(op)
+    {}
+
+    virtual void accept(Visitor &visitor) const override;
+
+    const Token &getVarName() const { return m_VarName; }
+    const Token &getOperator() const { return m_Operator; }
+
+private:
+    const Token m_VarName;
+    const Token m_Operator;
 };
 
 //---------------------------------------------------------------------------
@@ -226,6 +245,7 @@ public:
     virtual void visit(const Grouping &grouping) = 0;
     virtual void visit(const Literal &literal) = 0;
     virtual void visit(const Logical &logical) = 0;
+    virtual void visit(const PostfixIncDec &postfixIncDec) = 0;
     virtual void visit(const Variable &variable) = 0;
     virtual void visit(const Unary &unary) = 0;
 };
