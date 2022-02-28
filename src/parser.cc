@@ -418,7 +418,8 @@ Expression::ExpressionPtr parseAssignment(ParserState &parserState)
     auto expression = parseConditional(parserState);
     if(parserState.match({Token::Type::EQUAL, Token::Type::STAR_EQUAL, Token::Type::SLASH_EQUAL, 
                           Token::Type::PERCENT_EQUAL, Token::Type::PLUS_EQUAL, Token::Type::MINUS_EQUAL, 
-                          Token::Type::AMPERSAND_EQUAL, Token::Type::CARET_EQUAL, Token::Type::PIPE_EQUAL})) 
+                          Token::Type::AMPERSAND_EQUAL, Token::Type::CARET_EQUAL, Token::Type::PIPE_EQUAL,
+                          Token::Type::SHIFT_LEFT_EQUAL, Token::Type::SHIFT_RIGHT_EQUAL})) 
     {
         Token op = parserState.previous();
         auto value = parseAssignment(parserState);

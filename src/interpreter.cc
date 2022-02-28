@@ -99,6 +99,12 @@ Interpreter::Value Interpreter::Environment::assign(const Token &name, Token::Li
                         else if(op == Type::PIPE_EQUAL) {
                             return Token::LiteralValue(variable | assign);
                         }
+                        else if(op == Type::SHIFT_LEFT_EQUAL) {
+                            return Token::LiteralValue(variable << assign);
+                        }
+                        else if(op == Type::SHIFT_RIGHT_EQUAL) {
+                            return Token::LiteralValue(variable >> assign);
+                        }
                     }
                     throw std::runtime_error("Unsupported assignment operation");
                 },
