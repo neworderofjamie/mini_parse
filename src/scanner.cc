@@ -322,10 +322,36 @@ void scanToken(ScanState &scanState, std::vector<Token> &tokens)
         case '*': emplaceToken(tokens, scanState.match('=') ? Token::Type::STAR_EQUAL : Token::Type::STAR, scanState); break;
         //case '/': emplaceToken(tokens, scanState.match('=') ? Token::Type::SLASH_EQUAL : Token::Type::SLASH, scanState); break;
         case '%': emplaceToken(tokens, scanState.match('=') ? Token::Type::PERCENT_EQUAL : Token::Type::PERCENT, scanState); break;
-        case '+': emplaceToken(tokens, scanState.match('=') ? Token::Type::PLUS_EQUAL : Token::Type::PLUS, scanState); break;
-        case '-': emplaceToken(tokens, scanState.match('=') ? Token::Type::MINUS_EQUAL : Token::Type::MINUS, scanState); break;        
         case '^': emplaceToken(tokens, scanState.match('=') ? Token::Type::CARET_EQUAL : Token::Type::CARET, scanState); break;
         
+        case '+':
+        {
+            if(scanState.match('=')) {
+                emplaceToken(tokens, Token::Type::PLUS_EQUAL, scanState);
+            }
+            else if(scanState.match('+')) {
+                emplaceToken(tokens, Token::Type::PLUS_PLUS, scanState);
+            }
+            else {
+                emplaceToken(tokens, Token::Type::PLUS, scanState);
+            }
+            break;
+        }
+
+        case '-':
+        {
+            if(scanState.match('=')) {
+                emplaceToken(tokens, Token::Type::MINUS_EQUAL, scanState);
+            }
+            else if(scanState.match('-')) {
+                emplaceToken(tokens, Token::Type::MINUS_MINUS, scanState);
+            }
+            else {
+                emplaceToken(tokens, Token::Type::MINUS, scanState);
+            }
+            break;
+        }
+
         case '&': 
         {
             if(scanState.match('=')) {
