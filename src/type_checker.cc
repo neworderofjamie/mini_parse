@@ -103,16 +103,25 @@ void TypeChecker::visit(const Expression::Assignment &assignment)
 //---------------------------------------------------------------------------
 void TypeChecker::visit(const Expression::Binary &binary)
 {
-    auto leftType = evaluateType(binary.getLeft());
-    auto rightType = evaluateType(binary.getRight());
-    auto leftNumericType = dynamic_cast<const Type::NumericBase*>(leftType);
-    auto rightNumericType = dynamic_cast<const Type::NumericBase*>(rightType);
-    if(leftNumericType == nullptr || rightNumericType == nullptr) {
-        throw std::runtime_error("Invalid operand types '" + leftType->getTypeName() + "' and '" + rightType->getTypeName() + "' to binary " + std::string{binary.getOperator().lexeme});
+    const auto opType = binary.getOperator().type;
+    if(opType == Token::Type::COMMA) {
+        m_Type = evaluateType(binary.getRight());
     }
     else {
-        m_Type = Type::getCommonType(leftNumericType, rightNumericType);
-    }   
+        auto leftType = evaluateType(binary.getLeft());
+        auto rightType = evaluateType(binary.getRight());
+        auto leftNumericType = dynamic_cast<const Type::NumericBase *>(leftType);
+        auto rightNumericType = dynamic_cast<const Type::NumericBase *>(rightType);
+        if(leftNumericType == nullptr || rightNumericType == nullptr) {
+            throw std::runtime_error("Invalid operand types '" + leftType->getTypeName() + "' and '" + rightType->getTypeName() + "' to binary " + std::string{binary.getOperator().lexeme});
+        }
+        else if(opType == Token::Type::SHIFT_LEFT || opType == Token::Type::SHIFT_RIGHT) {
+            m_Type = Type::getPromotedType(leftNumericType);
+        }
+        else {
+            m_Type = Type::getCommonType(leftNumericType, rightNumericType);
+        }
+    }
 }
 //---------------------------------------------------------------------------
 void TypeChecker::visit(const Expression::Call &call)
