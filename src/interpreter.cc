@@ -356,10 +356,14 @@ void Interpreter::visit(const Expression::Call &call)
         arguments.push_back(evaluate(arg.get()));
     }
 
-    // If arguments count doesn't match, give error
-    if(arguments.size() != callable.get().getArity()) {
-        throw std::runtime_error("Expected " + std::to_string(callable.get().getArity()) + " arguments but got "
-                                 + std::to_string(arguments.size()) + " at line:" + std::to_string(call.getClosingParen().line));
+    // If callable has fixed arity
+    if(callable.get().getArity()) {
+        //If arguments count doesn't match, give error
+        const size_t callableArity = *callable.get().getArity();
+        if(arguments.size() != callableArity) {
+            throw std::runtime_error("Expected " + std::to_string(callableArity) + " arguments but got "
+                                     + std::to_string(arguments.size()) + " at line:" + std::to_string(call.getClosingParen().line));
+        }
     }
 
     // Call function and save result

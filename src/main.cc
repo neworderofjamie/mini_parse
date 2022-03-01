@@ -5,6 +5,7 @@
 #include <variant>
 
 // Standard C includes
+#include <cassert>
 #include <cmath>
 
 // Mini-parse includes
@@ -127,7 +128,7 @@ class Sqrt : public Interpreter::Callable
 {
     using LiteralValue = Token::LiteralValue;
 public:
-    virtual size_t getArity() const final
+    virtual std::optional<size_t> getArity() const final
     {
         return 1;
     }
@@ -141,6 +142,7 @@ public:
             arguments[0]);
     }
 };
+    
 
 int main()
 {

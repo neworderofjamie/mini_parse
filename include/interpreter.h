@@ -1,6 +1,7 @@
 #pragma once
 
 // Standard C++ includes
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -22,7 +23,7 @@ public:
     class Callable
     {
     public:
-        virtual size_t getArity() const = 0;
+        virtual std::optional<size_t> getArity() const = 0;
         virtual Token::LiteralValue call(const std::vector<Token::LiteralValue> &arguments) = 0;
     };
 
