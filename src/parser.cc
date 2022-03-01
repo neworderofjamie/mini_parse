@@ -467,10 +467,11 @@ Expression::ExpressionPtr parseConditional(ParserState &parserState)
     //      logical-OR-expression "?" expression ":" conditional-expression
     auto cond = parseLogicalOr(parserState);
     if(parserState.match(Token::Type::QUESTION)) {
+        Token question = parserState.previous();
         auto trueExpression = parseExpression(parserState);
         parserState.consume(Token::Type::COLON, "Expect ':' in conditional expression.");
         auto falseExpression = parseConditional(parserState);
-        return std::make_unique<Expression::Conditional>(std::move(cond), std::move(trueExpression), 
+        return std::make_unique<Expression::Conditional>(std::move(cond), question, std::move(trueExpression), 
                                                          std::move(falseExpression));
     }
 

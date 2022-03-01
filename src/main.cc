@@ -179,7 +179,7 @@ int main()
         const auto tokens = Scanner::scanSource(
             "float x = 1.0f;"
             "while(true) {\n"
-            "   x *= 0.9f;\n"
+            "   x <<= 1;\n"
             "   print x;\n"
             "   if(x < 0.1f) {\n"
             "       break;\n"
@@ -188,7 +188,6 @@ int main()
         // Parse
         auto statements = Parser::parseStatements(tokens, errorHandler);
         
-        TypeChecker typeChecker;
         TypeChecker::Environment typeEnvironment;
         
         typeEnvironment.define<Type::Double>("Isyn", true); 
@@ -205,7 +204,7 @@ int main()
         typeEnvironment.define<Type::Double>("n");
         typeEnvironment.define<Type::Exp>("exp");
         typeEnvironment.define<Type::Sqrt>("sqrt");
-        typeChecker.typeCheck(statements, typeEnvironment);
+        TypeChecker::typeCheck(statements, typeEnvironment, errorHandler);
        
         PrettyPrinter printer;
         std::cout << printer.print(statements) << std::endl;

@@ -111,7 +111,7 @@ public:
 
     const Base *getExpression() const { return m_Expression.get(); }
     const Type::NumericBase *getType() const { return m_Type; }
-    
+
 private:
     const Type::NumericBase *m_Type;
     const ExpressionPtr m_Expression;
@@ -123,18 +123,20 @@ private:
 class Conditional : public Base
 {
 public:
-    Conditional(ExpressionPtr condition, ExpressionPtr trueExpression, ExpressionPtr falseExpression)
-    :  m_Condition(std::move(condition)), m_True(std::move(trueExpression)), m_False(std::move(falseExpression))
+    Conditional(ExpressionPtr condition, Token question, ExpressionPtr trueExpression, ExpressionPtr falseExpression)
+    :  m_Condition(std::move(condition)), m_Question(question), m_True(std::move(trueExpression)), m_False(std::move(falseExpression))
     {}
 
     virtual void accept(Visitor &visitor) const override;
 
     const Base *getCondition() const { return m_Condition.get(); }
+    const Token &getQuestion() const { return m_Question; }
     const Base *getTrue() const { return m_True.get(); }
     const Base *getFalse() const { return m_False.get(); }
 
 private:
     const ExpressionPtr m_Condition;
+    const Token m_Question;
     const ExpressionPtr m_True;
     const ExpressionPtr m_False;
 };
