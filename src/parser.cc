@@ -795,7 +795,7 @@ Expression::ExpressionPtr parseExpression(const std::vector<Token> &tokens, Erro
     }
 }
 
-Statement::StatementList parseStatements(const std::vector<Token> &tokens, ErrorHandler &errorHandler)
+Statement::StatementList parseBlockItemList(const std::vector<Token> &tokens, ErrorHandler &errorHandler)
 {
     ParserState parserState(tokens, errorHandler);
     std::vector<std::unique_ptr<const Statement::Base>> statements;

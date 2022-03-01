@@ -186,7 +186,7 @@ int main()
             "   }\n"
             "}\n", errorHandler);
         // Parse
-        auto statements = Parser::parseStatements(tokens, errorHandler);
+        auto statements = Parser::parseBlockItemList(tokens, errorHandler);
         
         TypeChecker::Environment typeEnvironment;
         

@@ -22,5 +22,5 @@ namespace MiniParse::Parser
 {
 Expression::ExpressionPtr parseExpression(const std::vector<Token> &tokens, ErrorHandler &errorHandler);
 
-Statement::StatementList parseStatements(const std::vector<Token> &tokens, ErrorHandler &errorHandler);
+Statement::StatementList parseBlockItemList(const std::vector<Token> &tokens, ErrorHandler &errorHandler);
 }   // MiniParse::MiniParse
