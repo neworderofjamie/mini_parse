@@ -105,6 +105,11 @@ void PrettyPrinter::visit(const Expression::Unary &unary)
     unary.getRight()->accept(*this);
 }
 //---------------------------------------------------------------------------
+void PrettyPrinter::visit(const Statement::Break&)
+{
+    m_StringStream << "break;";
+}
+//---------------------------------------------------------------------------
 void PrettyPrinter::visit(const Statement::Compound &compound)
 {
     m_StringStream << "{" << std::endl;
@@ -113,6 +118,11 @@ void PrettyPrinter::visit(const Statement::Compound &compound)
         m_StringStream << std::endl;
     }
     m_StringStream << "}" << std::endl;
+}
+//---------------------------------------------------------------------------
+void PrettyPrinter::visit(const Statement::Continue&)
+{
+    m_StringStream << "continue;";
 }
 //---------------------------------------------------------------------------
 void PrettyPrinter::visit(const Statement::Do &doStatement)

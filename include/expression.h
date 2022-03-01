@@ -22,8 +22,9 @@ class NumericBase;
 //---------------------------------------------------------------------------
 namespace MiniParse::Expression
 {
-struct Base
+class Base
 {
+public:
     virtual void accept(Visitor &visitor) const = 0;
 };
 

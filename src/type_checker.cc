@@ -242,10 +242,18 @@ void TypeChecker::visit(const Expression::Unary &unary)
     }
 }
 //---------------------------------------------------------------------------
+void TypeChecker::visit(const Statement::Break &)
+{
+}
+//---------------------------------------------------------------------------
 void TypeChecker::visit(const Statement::Compound &compound)
 {
     Environment environment(m_Environment);
     typeCheck(compound.getStatements(), environment);
+}
+//---------------------------------------------------------------------------
+void TypeChecker::visit(const Statement::Continue &)
+{
 }
 //---------------------------------------------------------------------------
 void TypeChecker::visit(const Statement::Do &doStatement)
@@ -289,7 +297,9 @@ void TypeChecker::visit(const Statement::If &ifStatement)
 {
     ifStatement.getCondition()->accept(*this);
     ifStatement.getThenBranch()->accept(*this);
-    ifStatement.getElseBranch()->accept(*this);
+    if(ifStatement.getElseBranch() != nullptr) {
+        ifStatement.getElseBranch()->accept(*this);
+    }
 }
 //---------------------------------------------------------------------------
 void TypeChecker::visit(const Statement::VarDeclaration &varDeclaration)

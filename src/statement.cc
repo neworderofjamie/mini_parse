@@ -7,7 +7,9 @@
     }
 
 // Implement accept methods
+IMPLEMENT_ACCEPT(Break)
 IMPLEMENT_ACCEPT(Compound)
+IMPLEMENT_ACCEPT(Continue)
 IMPLEMENT_ACCEPT(Do)
 IMPLEMENT_ACCEPT(Expression)
 IMPLEMENT_ACCEPT(For)

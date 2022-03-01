@@ -22,13 +22,25 @@ class NumericBase;
 //---------------------------------------------------------------------------
 namespace MiniParse::Statement
 {
-struct Base
+class Base
 {
+public:
     virtual void accept(Visitor &visitor) const = 0;
 };
 
 typedef std::unique_ptr<Base const> StatementPtr;
 typedef std::vector<StatementPtr> StatementList;
+
+//---------------------------------------------------------------------------
+// MiniParse::Statement::Break
+//---------------------------------------------------------------------------
+class Break : public Base
+{
+public:
+    Break() {}
+
+    virtual void accept(Visitor &visitor) const override;
+};
 
 //---------------------------------------------------------------------------
 // MiniParse::Statement::Compound
@@ -46,6 +58,17 @@ public:
 
 private:
     const StatementList m_Statements;
+};
+
+//---------------------------------------------------------------------------
+// MiniParse::Statement::Continue
+//---------------------------------------------------------------------------
+class Continue : public Base
+{
+public:
+    Continue() {}
+
+    virtual void accept(Visitor &visitor) const override;
 };
 
 //---------------------------------------------------------------------------
@@ -205,7 +228,9 @@ private:
 class Visitor
 {
 public:
+    virtual void visit(const Break &breakStatement) = 0;
     virtual void visit(const Compound &compound) = 0;
+    virtual void visit(const Continue &continueStatement) = 0;
     virtual void visit(const Do &doStatement) = 0;
     virtual void visit(const Expression &expression) = 0;
     virtual void visit(const For &forStatement) = 0;

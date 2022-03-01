@@ -43,7 +43,7 @@ struct Token
         TYPE_QUALIFIER,
 
         // Keywords
-        DO, ELSE, FALSE, FOR, IF, TRUE, WHILE, PRINT, SWITCH,
+        DO, ELSE, FALSE, FOR, IF, TRUE, WHILE, PRINT, SWITCH, CONTINUE, BREAK,
 
         END_OF_FILE,
     };

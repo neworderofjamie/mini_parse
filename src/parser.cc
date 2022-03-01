@@ -573,7 +573,7 @@ Statement::StatementPtr parseSelectionStatement(ParserState &parserState)
                                                std::move(thenBranch),
                                                std::move(elseBranch));
     }
-    // Otherwise (switch statment)
+    // Otherwise (switch statement)
     else {
         assert(false);
         return nullptr;
@@ -652,6 +652,27 @@ Statement::StatementPtr parseIterationStatement(ParserState &parserState)
     }
 }
 
+Statement::StatementPtr parseJumpStatement(ParserState &parserState)
+{
+    // jump-statement ::=
+    //      "continue" ";"
+    //      "break" ";"
+    //      "return" expression? ";"    // **TODO**
+    if(parserState.previous().type == Token::Type::CONTINUE) {
+        parserState.consume(Token::Type::SEMICOLON, "Expect ';' after continue");
+        return std::make_unique<Statement::Continue>();
+    }
+    else if(parserState.previous().type == Token::Type::BREAK) {
+        parserState.consume(Token::Type::SEMICOLON, "Expect ';' after break");
+        return std::make_unique<Statement::Break>();
+    }
+    // Otherwise (return statement)
+    else {
+        assert(false);
+        return nullptr;
+    }
+}
+
 Statement::StatementPtr parseStatement(ParserState &parserState)
 {
     // statement ::=
@@ -661,7 +682,7 @@ Statement::StatementPtr parseStatement(ParserState &parserState)
     //      print-statement         // **TEMP**
     //      selection-statement     
     //      iteration-statement
-    //      jump-statement          // **TODO**
+    //      jump-statement
     if(parserState.match(Token::Type::PRINT)) {
         return parsePrintStatement(parserState);
     }
@@ -671,6 +692,9 @@ Statement::StatementPtr parseStatement(ParserState &parserState)
     else if(parserState.match({Token::Type::FOR, Token::Type::WHILE, Token::Type::DO})) {
         return parseIterationStatement(parserState);
     }
+    else if(parserState.match({Token::Type::CONTINUE, Token::Type::BREAK})) {
+        return parseJumpStatement(parserState);
+    }
     else if(parserState.match(Token::Type::LEFT_BRACE)) {
         return parseCompoundStatement(parserState);
     }
@@ -679,7 +703,7 @@ Statement::StatementPtr parseStatement(ParserState &parserState)
     }
 }
 
-std::unique_ptr<const Statement::Base> parseDeclaration(ParserState &parserState)
+Statement::StatementPtr parseDeclaration(ParserState &parserState)
 {
     // declaration ::=
     //      declaration-specifiers init-declarator-list? ";"

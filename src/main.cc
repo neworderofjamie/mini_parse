@@ -175,11 +175,13 @@ int main()
             "print x;\n"
             "print sqrt(x);\n", errorHandler);*/
         const auto tokens = Scanner::scanSource(
-            "for(float x = -10.0f; x < 10.0f; x++) {\n"
+            "float x = 1.0f;"
+            "while(true) {\n"
+            "   x *= 0.9f;\n"
             "   print x;\n"
-            "   const float y = (x < 0.0f) ? (-x * x) : (x * x);\n"
-            "   print y;\n"
-            "   print (int)y;\n"
+            "   if(x < 0.1f) {\n"
+            "       break;\n"
+            "   }\n"
             "}\n", errorHandler);
         // Parse
         auto statements = Parser::parseStatements(tokens, errorHandler);

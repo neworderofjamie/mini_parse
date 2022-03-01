@@ -40,7 +40,9 @@ public:
     //---------------------------------------------------------------------------
     // Statement::Visitor virtuals
     //---------------------------------------------------------------------------
+    virtual void visit(const Statement::Break &breakStatement) override;
     virtual void visit(const Statement::Compound &compound) override;
+    virtual void visit(const Statement::Continue &continueStatement) override;
     virtual void visit(const Statement::Do &doStatement) override;
     virtual void visit(const Statement::Expression &expression) override;
     virtual void visit(const Statement::For &forStatement) override;

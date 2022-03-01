@@ -26,6 +26,20 @@ bool isTruthy(MiniParse::Token::LiteralValue value)
             [](std::monostate) { return false; }},
         value);
 }
+
+//---------------------------------------------------------------------------
+// Break
+//---------------------------------------------------------------------------
+class Break
+{
+};
+
+//---------------------------------------------------------------------------
+// Continue
+//---------------------------------------------------------------------------
+class Continue
+{
+};
 }
 
 //---------------------------------------------------------------------------
@@ -458,16 +472,35 @@ void Interpreter::visit(const Expression::Unary &unary)
 #endif
 }
 //---------------------------------------------------------------------------
+void Interpreter::visit(const Statement::Break&)
+{
+    throw Break();
+}
+//---------------------------------------------------------------------------
 void Interpreter::visit(const Statement::Compound &compound)
 {
     Environment environment(m_Environment);
     interpret(compound.getStatements(), environment);
 }
 //---------------------------------------------------------------------------
+void Interpreter::visit(const Statement::Continue&)
+{
+     throw Continue();
+}
+//---------------------------------------------------------------------------
 void Interpreter::visit(const Statement::Do &doStatement)
 {
     do {
-        doStatement.getBody()->accept(*this);
+        try {
+            doStatement.getBody()->accept(*this);
+        }
+        // Break if we encounter break exception and ignore continue exceptions
+        catch(Break&) {
+            break;
+        }
+        catch(Continue&) {
+        }
+        
     } while(isTruthy(evaluate(doStatement.getCondition())));
 }
 //---------------------------------------------------------------------------
@@ -491,7 +524,15 @@ void Interpreter::visit(const Statement::For &forStatement)
     // While condition is true
     while(isTruthy(evaluate(forStatement.getCondition()))) {
         // Interpret body
-        forStatement.getBody()->accept(*this);
+        try {
+            forStatement.getBody()->accept(*this);
+        }
+        // Break if we encounter break exception and ignore continue exceptions
+        catch(Break&) {
+            break;
+        }
+        catch(Continue&) {
+        }
 
         // Interpret incrementer if present
         if(forStatement.getIncrement()) {
@@ -529,7 +570,15 @@ void Interpreter::visit(const Statement::VarDeclaration &varDeclaration)
 void Interpreter::visit(const Statement::While &whileStatement)
 {
     while(isTruthy(evaluate(whileStatement.getCondition()))) {
-        whileStatement.getBody()->accept(*this);
+        try {
+            whileStatement.getBody()->accept(*this);
+        }
+        // Break if we encounter break exception and ignore continue exceptions
+        catch(Break&) {
+            break;
+        }
+        catch(Continue&) {
+        }
     }
 }
 //---------------------------------------------------------------------------
