@@ -124,6 +124,30 @@ private:
 };
 
 //---------------------------------------------------------------------------
+// MiniParse::Statement::For
+//---------------------------------------------------------------------------
+class For : public Base
+{
+public:
+    For(StatementPtr initialiser, MiniParse::Expression::ExpressionPtr condition, MiniParse::Expression::ExpressionPtr increment, StatementPtr body)
+    :  m_Initialiser(std::move(initialiser)), m_Condition(std::move(condition)), m_Increment(std::move(increment)), m_Body(std::move(body))
+    {}
+
+    virtual void accept(Visitor &visitor) const override;
+
+    const Base *getInitialiser() const { return m_Initialiser.get(); }
+    const MiniParse::Expression::Base *getCondition() const { return m_Condition.get(); }
+    const MiniParse::Expression::Base *getIncrement() const { return m_Increment.get(); }
+    const Base *getBody() const { return m_Body.get(); }
+
+private:
+    const StatementPtr m_Initialiser;
+    const MiniParse::Expression::ExpressionPtr m_Condition;
+    const MiniParse::Expression::ExpressionPtr m_Increment;
+    const StatementPtr m_Body;
+};
+
+//---------------------------------------------------------------------------
 // MiniParse::Statement::If
 //---------------------------------------------------------------------------
 class If : public Base
@@ -145,28 +169,48 @@ private:
     const StatementPtr m_ElseBranch;
 };
 
-
 //---------------------------------------------------------------------------
-// MiniParse::Statement::For
+// MiniParse::Statement::Labelled
 //---------------------------------------------------------------------------
-class For : public Base
+class Labelled : public Base
 {
 public:
-    For(StatementPtr initialiser, MiniParse::Expression::ExpressionPtr condition, MiniParse::Expression::ExpressionPtr increment, StatementPtr body)
-    :  m_Initialiser(std::move(initialiser)), m_Condition(std::move(condition)), m_Increment(std::move(increment)), m_Body(std::move(body))
+    Labelled(Token keyword, MiniParse::Expression::ExpressionPtr value, StatementPtr body)
+    :  m_Keyword(keyword), m_Value(std::move(value)), m_Body(std::move(body))
     {}
 
     virtual void accept(Visitor &visitor) const override;
 
-    const Base *getInitialiser() const { return m_Initialiser.get(); }
-    const MiniParse::Expression::Base *getCondition() const { return m_Condition.get(); }
-    const MiniParse::Expression::Base *getIncrement() const { return m_Increment.get(); }
+    const Token &getKeyword() const { return m_Keyword; }
+    const MiniParse::Expression::Base *getValue() const { return m_Value.get(); }
     const Base *getBody() const { return m_Body.get(); }
 
 private:
-    const StatementPtr m_Initialiser;
+    const Token m_Keyword;
+    const MiniParse::Expression::ExpressionPtr m_Value;
+    const StatementPtr m_Body;
+};
+
+
+//---------------------------------------------------------------------------
+// MiniParse::Statement::Switch
+//---------------------------------------------------------------------------
+class Switch : public Base
+{
+public:
+    Switch(Token switchToken, MiniParse::Expression::ExpressionPtr condition, StatementPtr body)
+    :   m_Switch(switchToken), m_Condition(std::move(condition)), m_Body(std::move(body))
+    {}
+
+    virtual void accept(Visitor &visitor) const override;
+
+    const Token &getSwitch() const { return m_Switch; }
+    const MiniParse::Expression::Base *getCondition() const { return m_Condition.get(); }
+    const Base *getBody() const { return m_Body.get(); }
+    
+private:
+    const Token m_Switch;
     const MiniParse::Expression::ExpressionPtr m_Condition;
-    const MiniParse::Expression::ExpressionPtr m_Increment;
     const StatementPtr m_Body;
 };
 
@@ -249,6 +293,8 @@ public:
     virtual void visit(const Expression &expression) = 0;
     virtual void visit(const For &forStatement) = 0;
     virtual void visit(const If &ifStatement) = 0;
+    virtual void visit(const Labelled &labelled) = 0;
+    virtual void visit(const Switch &switchStatement) = 0;
     virtual void visit(const VarDeclaration &varDeclaration) = 0;
     virtual void visit(const While &whileStatement) = 0;
     virtual void visit(const Print &print) = 0;

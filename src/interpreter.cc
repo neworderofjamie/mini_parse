@@ -558,6 +558,16 @@ void Interpreter::visit(const Statement::If &ifStatement)
     }
 }
 //---------------------------------------------------------------------------
+void Interpreter::visit(const Statement::Labelled &labelled)
+{
+    assert(false);
+}
+//---------------------------------------------------------------------------
+void Interpreter::visit(const Statement::Switch &switchStatement)
+{
+    assert(false);
+}
+//---------------------------------------------------------------------------
 void Interpreter::visit(const Statement::VarDeclaration &varDeclaration)
 {
     // **TODO** something with type

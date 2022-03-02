@@ -36,7 +36,8 @@ class Visitor : public Expression::Visitor, public Statement::Visitor
 {
 public:
     Visitor(ErrorHandler &errorHandler)
-        : m_Environment(nullptr), m_Type(nullptr), m_ErrorHandler(errorHandler), m_InLoop(false)
+    :   m_Environment(nullptr), m_Type(nullptr), m_ErrorHandler(errorHandler), 
+        m_InLoop(false), m_InSwitch(false)
     {
     }
     //---------------------------------------------------------------------------
@@ -239,7 +240,7 @@ public:
     //---------------------------------------------------------------------------
     virtual void visit(const Statement::Break &breakStatement) final
     {
-        if(!m_InLoop) {
+        if(!m_InLoop && !m_InSwitch) {
             m_ErrorHandler.error(breakStatement.getToken(), "Statement not within loop");
         }
     }
@@ -306,6 +307,40 @@ public:
             ifStatement.getElseBranch()->accept(*this);
         }
     }
+    
+    virtual void visit(const Statement::Labelled &labelled) final
+    {
+        if(!m_InSwitch) {
+            m_ErrorHandler.error(labelled.getKeyword(), "Statement not within switch statement");
+        }
+
+        if(labelled.getValue()) {
+            auto valType = evaluateType(labelled.getValue());
+            auto valNumericType = dynamic_cast<const Type::NumericBase *>(valType);
+            if(valNumericType == nullptr || !valNumericType->isIntegral()) {
+                m_ErrorHandler.error(labelled.getKeyword(),
+                                     "Invalid case value '" + valType->getTypeName() + "'");
+                throw TypeCheckError();
+            }
+        }
+
+        labelled.getBody()->accept(*this);
+    }
+
+    virtual void visit(const Statement::Switch &switchStatement) final
+    {
+        auto condType = evaluateType(switchStatement.getCondition());
+        auto condNumericType = dynamic_cast<const Type::NumericBase*>(condType);
+        if(condNumericType == nullptr || !condNumericType->isIntegral()) {
+            m_ErrorHandler.error(switchStatement.getSwitch(), 
+                                 "Invalid condition '" + condType->getTypeName() + "'");
+            throw TypeCheckError();
+        }
+
+        m_InSwitch = true;
+        switchStatement.getBody()->accept(*this);
+        m_InSwitch = false;
+    }
 
     virtual void visit(const Statement::VarDeclaration &varDeclaration) final
     {
@@ -345,6 +380,7 @@ private:
     const Type::Base *m_Type;
     ErrorHandler &m_ErrorHandler;
     bool m_InLoop;
+    bool m_InSwitch;
 };
 }
 

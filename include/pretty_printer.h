@@ -24,32 +24,34 @@ public:
     //---------------------------------------------------------------------------
     // Expression::Visitor virtuals
     //---------------------------------------------------------------------------
-    virtual void visit(const Expression::Assignment &assignement) override;
-    virtual void visit(const Expression::Binary &binary) override;
-    virtual void visit(const Expression::Call &call) override;
-    virtual void visit(const Expression::Cast &cast) override;
-    virtual void visit(const Expression::Conditional &conditional) override;
-    virtual void visit(const Expression::Grouping &grouping) override;
-    virtual void visit(const Expression::Literal &literal) override;
-    virtual void visit(const Expression::Logical &logical) override;
-    virtual void visit(const Expression::PostfixIncDec &postfixIncDec) override;
-    virtual void visit(const Expression::PrefixIncDec &postfixIncDec) override;
-    virtual void visit(const Expression::Variable &variable) override;
-    virtual void visit(const Expression::Unary &unary) override;
+    virtual void visit(const Expression::Assignment &assignement) final;
+    virtual void visit(const Expression::Binary &binary) final;
+    virtual void visit(const Expression::Call &call) final;
+    virtual void visit(const Expression::Cast &cast) final;
+    virtual void visit(const Expression::Conditional &conditional) final;
+    virtual void visit(const Expression::Grouping &grouping) final;
+    virtual void visit(const Expression::Literal &literal) final;
+    virtual void visit(const Expression::Logical &logical) final;
+    virtual void visit(const Expression::PostfixIncDec &postfixIncDec) final;
+    virtual void visit(const Expression::PrefixIncDec &postfixIncDec) final;
+    virtual void visit(const Expression::Variable &variable) final;
+    virtual void visit(const Expression::Unary &unary) final;
     
     //---------------------------------------------------------------------------
     // Statement::Visitor virtuals
     //---------------------------------------------------------------------------
-    virtual void visit(const Statement::Break &breakStatement) override;
-    virtual void visit(const Statement::Compound &compound) override;
-    virtual void visit(const Statement::Continue &continueStatement) override;
-    virtual void visit(const Statement::Do &doStatement) override;
-    virtual void visit(const Statement::Expression &expression) override;
-    virtual void visit(const Statement::For &forStatement) override;
-    virtual void visit(const Statement::If &ifStatement) override;
-    virtual void visit(const Statement::VarDeclaration &varDeclaration) override;
-    virtual void visit(const Statement::While &whileStatement) override;
-    virtual void visit(const Statement::Print &print) override;
+    virtual void visit(const Statement::Break &breakStatement) final;
+    virtual void visit(const Statement::Compound &compound) final;
+    virtual void visit(const Statement::Continue &continueStatement) final;
+    virtual void visit(const Statement::Do &doStatement) final;
+    virtual void visit(const Statement::Expression &expression) final;
+    virtual void visit(const Statement::For &forStatement) final;
+    virtual void visit(const Statement::If &ifStatement) final;
+    virtual void visit(const Statement::Labelled &labelled) final;
+    virtual void visit(const Statement::Switch &switchStatement) final;
+    virtual void visit(const Statement::VarDeclaration &varDeclaration) final;
+    virtual void visit(const Statement::While &whileStatement) final;
+    virtual void visit(const Statement::Print &print) final;
 
 private:
     //---------------------------------------------------------------------------

@@ -3,6 +3,7 @@
 // Standard C++ includes
 #include <map>
 #include <set>
+#include <stack>
 #include <stdexcept>
 
 // Standard C includes
@@ -124,6 +125,7 @@ public:
     }
 
     bool isAtEnd() const { return (peek().type == Token::Type::END_OF_FILE); }
+
 private:
     //---------------------------------------------------------------------------
     // Members
@@ -514,6 +516,24 @@ Expression::ExpressionPtr parseExpression(ParserState &parserState)
                        {Token::Type::COMMA});
 }
 
+Statement::StatementPtr parseLabelledStatement(ParserState &parserState)
+{
+    // labeled-statement ::=
+    //      "case" constant-expression ":" statement
+    //      "default" ":" statement
+    const auto keyword = parserState.previous();
+
+    Expression::ExpressionPtr value;
+    if(keyword.type == Token::Type::CASE) {
+        value = parseConditional(parserState);
+    }
+
+    parserState.consume(Token::Type::COLON, "Expect ':' after labelled statement."); 
+ 
+    return std::make_unique<Statement::Labelled>(keyword, std::move(value), 
+                                                 parseStatement(parserState));
+}
+
 Statement::StatementPtr parseCompoundStatement(ParserState &parserState)
 {
     // compound-statement ::=
@@ -556,7 +576,7 @@ Statement::StatementPtr parseSelectionStatement(ParserState &parserState)
     // selection-statement ::=
     //      "if" "(" expression ")" statement
     //      "if" "(" expression ")" statement "else" statement
-    //      "switch" "(" expression ")" statement           // **TODO**
+    //      "switch" "(" expression ")" statement
     const auto keyword = parserState.previous();
     parserState.consume(Token::Type::LEFT_PAREN, "Expect '(' after '" + std::string{keyword.lexeme} + "'");
     auto condition = parseExpression(parserState);
@@ -576,8 +596,8 @@ Statement::StatementPtr parseSelectionStatement(ParserState &parserState)
     }
     // Otherwise (switch statement)
     else {
-        assert(false);
-        return nullptr;
+        return std::make_unique<Statement::Switch>(keyword, std::move(condition),
+                                                   parseStatement(parserState));
     }
 }
 
@@ -678,7 +698,7 @@ Statement::StatementPtr parseJumpStatement(ParserState &parserState)
 Statement::StatementPtr parseStatement(ParserState &parserState)
 {
     // statement ::=
-    //      labeled-statement       // **TODO**
+    //      labeled-statement
     //      compound-statement
     //      expression-statement
     //      print-statement         // **TEMP**
@@ -687,6 +707,9 @@ Statement::StatementPtr parseStatement(ParserState &parserState)
     //      jump-statement
     if(parserState.match(Token::Type::PRINT)) {
         return parsePrintStatement(parserState);
+    }
+    else if(parserState.match({Token::Type::CASE, Token::Type::DEFAULT})) {
+        return parseLabelledStatement(parserState);
     }
     else if(parserState.match({Token::Type::IF, Token::Type::SWITCH})) {
         return parseSelectionStatement(parserState);

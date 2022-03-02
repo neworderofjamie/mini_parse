@@ -177,7 +177,11 @@ int main()
             "print x;\n"
             "print sqrt(x);\n", errorHandler);*/
         const auto tokens = Scanner::scanSource(
-            "!sqrt;\n"
+            "switch(4) {\n"
+            "   case 2: print(2);\n"
+            "   case 3: print(3); break;\n"
+            "   default: print(0);\n"
+            "}\n"
             "float x = 1.0f;"
             "while(true) {\n"
             "   x *= 0.9f;\n"

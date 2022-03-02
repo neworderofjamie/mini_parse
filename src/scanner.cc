@@ -34,6 +34,8 @@ const std::unordered_map<std::string_view, Token::Type> keywords{
     {"switch", Token::Type::SWITCH},
     {"break", Token::Type::BREAK},
     {"continue", Token::Type::CONTINUE},
+    {"case", Token::Type::CASE},
+    {"default", Token::Type::DEFAULT},
     {"print", Token::Type::PRINT},  // **HACK**
     {"char", Token::Type::TYPE_SPECIFIER},
     {"short", Token::Type::TYPE_SPECIFIER},

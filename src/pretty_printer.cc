@@ -175,6 +175,24 @@ void PrettyPrinter::visit(const Statement::If &ifStatement)
     }
 }
 //---------------------------------------------------------------------------
+void PrettyPrinter::visit(const Statement::Labelled &labelled)
+{
+    m_StringStream << labelled.getKeyword().lexeme << " ";
+    if(labelled.getValue()) {
+        labelled.getValue()->accept(*this);
+    }
+    m_StringStream << " : ";
+    labelled.getBody()->accept(*this);
+}
+//---------------------------------------------------------------------------
+void PrettyPrinter::visit(const Statement::Switch &switchStatement)
+{
+    m_StringStream << "switch(";
+    switchStatement.getCondition()->accept(*this);
+    m_StringStream << ")" << std::endl;
+    switchStatement.getBody()->accept(*this);
+}
+//---------------------------------------------------------------------------
 void PrettyPrinter::visit(const Statement::VarDeclaration &varDeclaration)
 {
     if(varDeclaration.isConst()) {
