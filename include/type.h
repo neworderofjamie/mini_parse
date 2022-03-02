@@ -33,6 +33,10 @@
         DECLARE_TYPE(TYPE)                                                  \
         virtual std::string getTypeName() const{ return #UNDERLYING_TYPE; } \
     };                                                                      \
+    class TYPE##Array : public NumericArray<TYPE>                           \
+    {                                                                       \
+        DECLARE_TYPE(TYPE##Array)                                           \
+    };                                                                      \
     template<>                                                              \
     struct TypeTraits<UNDERLYING_TYPE>                                      \
     {                                                                       \
@@ -46,6 +50,7 @@
     }
 
 #define IMPLEMENT_TYPE(TYPE) TYPE *TYPE::s_Instance = NULL
+#define IMPLEMENT_NUMERIC_TYPE(TYPE) IMPLEMENT_TYPE(TYPE); IMPLEMENT_TYPE(TYPE##Array)
 
 //----------------------------------------------------------------------------
 // Type::TypeTraits
@@ -69,7 +74,6 @@ public:
     // Declared virtuals
     //------------------------------------------------------------------------
     virtual std::string getTypeName() const = 0;
-    virtual size_t getSizeBytes() const = 0;
     virtual size_t getTypeHash() const = 0;
 };
 
@@ -99,9 +103,13 @@ class Numeric : public NumericBase
 {
 public:
     //------------------------------------------------------------------------
+    // Typedefines
+    //------------------------------------------------------------------------
+    typedef T UnderlyingType;
+
+    //------------------------------------------------------------------------
     // Base virtuals
     //------------------------------------------------------------------------
-    virtual size_t getSizeBytes() const final { return sizeof(T); }
     virtual size_t getTypeHash() const final { return typeid(T).hash_code(); }
 
     //------------------------------------------------------------------------
@@ -116,6 +124,37 @@ public:
 };
 
 //----------------------------------------------------------------------------
+// NumericArrayBase
+//----------------------------------------------------------------------------
+class NumericArrayBase : public Base
+{
+public:
+    //------------------------------------------------------------------------
+    // Declared virtuals
+    //------------------------------------------------------------------------
+    virtual const NumericBase *getValueType() const = 0;
+};
+
+//----------------------------------------------------------------------------
+// NumericArray
+//----------------------------------------------------------------------------
+template<typename T>
+class NumericArray : public NumericArrayBase
+{
+public:
+    //------------------------------------------------------------------------
+    // Base virtuals
+    //------------------------------------------------------------------------
+    virtual std::string getTypeName() const final { return "*" + T::getInstance()->getTypeName(); }
+    virtual size_t getTypeHash() const final { return typeid(std::add_pointer_t<T::UnderlyingType>).hash_code(); }
+
+    //------------------------------------------------------------------------
+    // NumericArrayBase virtuals
+    //------------------------------------------------------------------------
+    virtual const NumericBase *getValueType() const final { return T::getInstance(); }
+};
+
+//----------------------------------------------------------------------------
 // Type::ForeignFunctionBase
 //----------------------------------------------------------------------------
 class ForeignFunctionBase : public Base
@@ -125,7 +164,6 @@ public:
     // Base virtuals
     //------------------------------------------------------------------------
     virtual std::string getTypeName() const = 0;
-    virtual size_t getSizeBytes() const final { return 0; }
     virtual size_t getTypeHash() const = 0;
 
     //------------------------------------------------------------------------
