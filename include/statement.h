@@ -37,9 +37,16 @@ typedef std::vector<StatementPtr> StatementList;
 class Break : public Base
 {
 public:
-    Break() {}
+    Break(Token token) 
+    :   m_Token(token) 
+    {}
 
     virtual void accept(Visitor &visitor) const override;
+
+    const Token &getToken() const { return m_Token; }
+
+private:
+    const Token m_Token;
 };
 
 //---------------------------------------------------------------------------
@@ -66,9 +73,16 @@ private:
 class Continue : public Base
 {
 public:
-    Continue() {}
+    Continue(Token token) 
+    :   m_Token(token) 
+    {}
 
     virtual void accept(Visitor &visitor) const override;
+
+    const Token &getToken() const { return m_Token; }
+
+private:
+    const Token m_Token;
 };
 
 //---------------------------------------------------------------------------

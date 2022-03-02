@@ -36,7 +36,7 @@ class Visitor : public Expression::Visitor, public Statement::Visitor
 {
 public:
     Visitor(ErrorHandler &errorHandler)
-        : m_Environment(nullptr), m_Type(nullptr), m_ErrorHandler(errorHandler)
+        : m_Environment(nullptr), m_Type(nullptr), m_ErrorHandler(errorHandler), m_InLoop(false)
     {
     }
     //---------------------------------------------------------------------------
@@ -58,27 +58,47 @@ public:
     virtual void visit(const Expression::Assignment &assignment) final
     {
         auto rhsType = evaluateType(assignment.getValue());
-        m_Type = m_Environment->assign(assignment.getVarName(), rhsType, m_ErrorHandler);
+        m_Type = m_Environment->assign(assignment.getVarName(), rhsType, 
+                                       assignment.getOperator(), m_ErrorHandler);
     }
 
     virtual void visit(const Expression::Binary &binary) final
     {
         const auto opType = binary.getOperator().type;
+        auto rightType = evaluateType(binary.getRight());
         if(opType == Token::Type::COMMA) {
-            m_Type = evaluateType(binary.getRight());
+            m_Type = rightType;
         }
         else {
+            // If either of the types is non-numeric
             auto leftType = evaluateType(binary.getLeft());
-            auto rightType = evaluateType(binary.getRight());
             auto leftNumericType = dynamic_cast<const Type::NumericBase *>(leftType);
             auto rightNumericType = dynamic_cast<const Type::NumericBase *>(rightType);
             if(leftNumericType == nullptr || rightNumericType == nullptr) {
                 m_ErrorHandler.error(binary.getOperator(), "Invalid operand types '" + leftType->getTypeName() + "' and '" + rightType->getTypeName());
                 throw TypeCheckError();
             }
-            else if(opType == Token::Type::SHIFT_LEFT || opType == Token::Type::SHIFT_RIGHT) {
-                m_Type = Type::getPromotedType(leftNumericType);
+            // Otherwise, if operator requires integer operands
+            else if(opType == Token::Type::PERCENT || opType == Token::Type::SHIFT_LEFT 
+                    || opType == Token::Type::SHIFT_RIGHT || opType == Token::Type::CARET 
+                    || opType == Token::Type::AMPERSAND || opType == Token::Type::PIPE)
+            {
+                // Check that operands are integers
+                if(!leftNumericType->isIntegral() || !rightNumericType->isIntegral()) {
+                    m_ErrorHandler.error(binary.getOperator(), "Invalid operand types '" + leftType->getTypeName() + "' and '" + rightType->getTypeName());
+                    throw TypeCheckError();
+                }
+
+                // If operator is a shift, promote left type
+                if(opType == Token::Type::SHIFT_LEFT || opType == Token::Type::SHIFT_RIGHT) {
+                    m_Type = Type::getPromotedType(leftNumericType);
+                }
+                // Otherwise, take common type
+                else {
+                    m_Type = Type::getCommonType(leftNumericType, rightNumericType);
+                }
             }
+            // Otherwise, any numeric type will do, take common type
             else {
                 m_Type = Type::getCommonType(leftNumericType, rightNumericType);
             }
@@ -166,12 +186,14 @@ public:
 
     virtual void visit(const Expression::PostfixIncDec &postfixIncDec) final
     {
-        m_Type = m_Environment->incDec(postfixIncDec.getVarName(), m_ErrorHandler);
+        m_Type = m_Environment->incDec(postfixIncDec.getVarName(), 
+                                       postfixIncDec.getOperator(), m_ErrorHandler);
     }
 
     virtual void visit(const Expression::PrefixIncDec &prefixIncDec) final
     {
-        m_Type = m_Environment->incDec(prefixIncDec.getVarName(), m_ErrorHandler);
+        m_Type = m_Environment->incDec(prefixIncDec.getVarName(), 
+                                       prefixIncDec.getOperator(), m_ErrorHandler);
     }
 
     virtual void visit(const Expression::Variable &variable)
@@ -215,8 +237,11 @@ public:
     //---------------------------------------------------------------------------
     // Statement::Visitor virtuals
     //---------------------------------------------------------------------------
-    virtual void visit(const Statement::Break &) final
+    virtual void visit(const Statement::Break &breakStatement) final
     {
+        if(!m_InLoop) {
+            m_ErrorHandler.error(breakStatement.getToken(), "Statement not within loop");
+        }
     }
 
     virtual void visit(const Statement::Compound &compound) final
@@ -225,13 +250,18 @@ public:
         typeCheck(compound.getStatements(), environment);
     }
 
-    virtual void visit(const Statement::Continue &) final
+    virtual void visit(const Statement::Continue &continueStatement) final
     {
+        if(!m_InLoop) {
+            m_ErrorHandler.error(continueStatement.getToken(), "Statement not within loop");
+        }
     }
 
     virtual void visit(const Statement::Do &doStatement) final
     {
+        m_InLoop = true;
         doStatement.getBody()->accept(*this);
+        m_InLoop = false;
         doStatement.getCondition()->accept(*this);
     }
 
@@ -260,7 +290,9 @@ public:
             forStatement.getIncrement()->accept(*this);
         }
 
+        m_InLoop = true;
         forStatement.getBody()->accept(*this);
+        m_InLoop = false;
 
         // Restore environment
         m_Environment = previous;
@@ -286,7 +318,9 @@ public:
     virtual void visit(const Statement::While &whileStatement) final
     {
         whileStatement.getCondition()->accept(*this);
+        m_InLoop = true;
         whileStatement.getBody()->accept(*this);
+        m_InLoop = false;
     }
 
     virtual void visit(const Statement::Print &print) final
@@ -310,6 +344,7 @@ private:
     Environment *m_Environment;
     const Type::Base *m_Type;
     ErrorHandler &m_ErrorHandler;
+    bool m_InLoop;
 };
 }
 
@@ -324,7 +359,7 @@ void Environment::define(const Token &name, const Type::Base *type, bool isConst
     }
 }
 //---------------------------------------------------------------------------
-const Type::Base *Environment::assign(const Token &name, const Type::Base *type, ErrorHandler &errorHandler)
+const Type::Base *Environment::assign(const Token &name, const Type::Base *type, const Token &op, ErrorHandler &errorHandler)
 {
     auto existingType = m_Types.find(name.lexeme);
     if(existingType == m_Types.end()) {
@@ -333,7 +368,7 @@ const Type::Base *Environment::assign(const Token &name, const Type::Base *type,
             throw TypeCheckError();
         }
         else {
-            return m_Enclosing->assign(name, type, errorHandler);
+            return m_Enclosing->assign(name, type, op, errorHandler);
         }
     }
     // Otherwise, if type is found and it's const, give error
@@ -341,13 +376,45 @@ const Type::Base *Environment::assign(const Token &name, const Type::Base *type,
         errorHandler.error(name, "Assignment of read-only variable");
         throw TypeCheckError();
     }
-    // Otherwise, return type
+    // Otherwise, if assignment operation is plain equals, any type is fine so return
+    else if(op.type == Token::Type::EQUAL) {
+        return std::get<0>(existingType->second);
+    }
+    // Otherwise
     else {
+        // If either type isn't numeric, give error
+        auto numericExistingType = dynamic_cast<const Type::NumericBase *>(std::get<0>(existingType->second));
+        auto numericType = dynamic_cast<const Type::NumericBase *>(type);
+        if(numericType == nullptr) {
+            errorHandler.error(op, "Invalid operand types '" + type->getTypeName() + "'");
+            throw TypeCheckError();
+        }
+        else if(numericExistingType == nullptr) {
+            errorHandler.error(op, "Invalid operand types '" + std::get<0>(existingType->second)->getTypeName() + "'");
+            throw TypeCheckError();
+        }
+        // Otherwise, if operation is one which requires integer operands
+        else if(op.type == Token::Type::PERCENT_EQUAL || op.type == Token::Type::AMPERSAND_EQUAL 
+                || op.type == Token::Type::CARET_EQUAL || op.type == Token::Type::PIPE_EQUAL 
+                || op.type == Token::Type::SHIFT_LEFT_EQUAL || op.type == Token::Type::SHIFT_RIGHT_EQUAL)
+        {
+            // If either type is non-integral, give error
+            if(!numericType->isIntegral()) {
+                errorHandler.error(op, "Invalid operand types '" + numericType->getTypeName() + "'");
+                throw TypeCheckError();
+            }
+            if(!numericExistingType->isIntegral()) {
+                errorHandler.error(op, "Invalid operand types '" + numericExistingType->getTypeName() + "'");
+                throw TypeCheckError();
+            }
+        }
+         
+        // Return existing type
         return std::get<0>(existingType->second);
     }
 }
 //---------------------------------------------------------------------------
-const Type::Base *Environment::incDec(const Token &name, ErrorHandler &errorHandler)
+const Type::Base *Environment::incDec(const Token &name, const Token &op, ErrorHandler &errorHandler)
 {
     auto existingType = m_Types.find(name.lexeme);
     if(existingType == m_Types.end()) {
@@ -356,7 +423,7 @@ const Type::Base *Environment::incDec(const Token &name, ErrorHandler &errorHand
             throw TypeCheckError();
         }
         else {
-            return m_Enclosing->incDec(name, errorHandler);
+            return m_Enclosing->incDec(name, op, errorHandler);
         }
     }
     // Otherwise, if type is found and it's const, give error
@@ -366,7 +433,14 @@ const Type::Base *Environment::incDec(const Token &name, ErrorHandler &errorHand
     }
     // Otherwise, return type
     else {
-        return std::get<0>(existingType->second);
+        auto numericExistingType = dynamic_cast<const Type::NumericBase *>(std::get<0>(existingType->second));
+        if(numericExistingType == nullptr) {
+            errorHandler.error(op, "Invalid operand types '" + std::get<0>(existingType->second)->getTypeName() + "'");
+            throw TypeCheckError();
+        }
+        else {
+            return std::get<0>(existingType->second);
+        }
     }
 }
 //---------------------------------------------------------------------------

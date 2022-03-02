@@ -659,13 +659,14 @@ Statement::StatementPtr parseJumpStatement(ParserState &parserState)
     //      "continue" ";"
     //      "break" ";"
     //      "return" expression? ";"    // **TODO**
-    if(parserState.previous().type == Token::Type::CONTINUE) {
+    const Token token = parserState.previous();
+    if(token.type == Token::Type::CONTINUE) {
         parserState.consume(Token::Type::SEMICOLON, "Expect ';' after continue");
-        return std::make_unique<Statement::Continue>();
+        return std::make_unique<Statement::Continue>(token);
     }
-    else if(parserState.previous().type == Token::Type::BREAK) {
+    else if(token.type == Token::Type::BREAK) {
         parserState.consume(Token::Type::SEMICOLON, "Expect ';' after break");
-        return std::make_unique<Statement::Break>();
+        return std::make_unique<Statement::Break>(token);
     }
     // Otherwise (return statement)
     else {
