@@ -32,6 +32,26 @@ typedef std::unique_ptr<Base const> ExpressionPtr;
 typedef std::vector<ExpressionPtr> ExpressionList;
 
 //---------------------------------------------------------------------------
+// MiniParse::Expression::ArraySubscript
+//---------------------------------------------------------------------------
+class ArraySubscript : public Base
+{
+public:
+    ArraySubscript(Token arrayName, ExpressionPtr index)
+    :  m_ArrayName(arrayName), m_Index(std::move(index))
+    {}
+
+    virtual void accept(Visitor &visitor) const final;
+
+    const Token &getArrayName() const { return m_ArrayName; }
+    const ExpressionPtr &getIndex() const { return m_Index; }
+
+private:
+    const Token m_ArrayName;
+    const ExpressionPtr m_Index;
+};
+
+//---------------------------------------------------------------------------
 // MiniParse::Expression::Assignment
 //---------------------------------------------------------------------------
 class Assignment : public Base
@@ -41,7 +61,7 @@ public:
     :  m_VarName(varName), m_Operator(op), m_Value(std::move(value))
     {}
 
-    virtual void accept(Visitor &visitor) const override;
+    virtual void accept(Visitor &visitor) const final;
 
     const Token &getVarName() const { return m_VarName; }
     const Token &getOperator() const { return m_Operator; }
@@ -63,7 +83,7 @@ public:
     :  m_Left(std::move(left)), m_Operator(op), m_Right(std::move(right))
     {}
 
-    virtual void accept(Visitor &visitor) const override;
+    virtual void accept(Visitor &visitor) const final;
 
     const Base *getLeft() const { return m_Left.get(); }
     const Token &getOperator() const { return m_Operator; }
@@ -85,7 +105,7 @@ public:
     :  m_Callee(std::move(callee)), m_ClosingParen(closingParen), m_Arguments(std::move(arguments))
     {}
 
-    virtual void accept(Visitor &visitor) const override;
+    virtual void accept(Visitor &visitor) const final;
 
     const Base *getCallee() const { return m_Callee.get(); }
     const Token &getClosingParen() const { return m_ClosingParen; }
@@ -107,7 +127,7 @@ public:
     :  m_Type(type), m_Expression(std::move(expression))
     {}
 
-    virtual void accept(Visitor &visitor) const override;
+    virtual void accept(Visitor &visitor) const final;
 
     const Base *getExpression() const { return m_Expression.get(); }
     const Type::NumericBase *getType() const { return m_Type; }
@@ -127,7 +147,7 @@ public:
     :  m_Condition(std::move(condition)), m_Question(question), m_True(std::move(trueExpression)), m_False(std::move(falseExpression))
     {}
 
-    virtual void accept(Visitor &visitor) const override;
+    virtual void accept(Visitor &visitor) const final;
 
     const Base *getCondition() const { return m_Condition.get(); }
     const Token &getQuestion() const { return m_Question; }
@@ -151,7 +171,7 @@ public:
     :  m_Expression(std::move(expression))
     {}
 
-    virtual void accept(Visitor &visitor) const override;
+    virtual void accept(Visitor &visitor) const final;
 
     const Base *getExpression() const { return m_Expression.get(); }
 
@@ -169,7 +189,7 @@ public:
     :  m_Value(value)
     {}
 
-    virtual void accept(Visitor &visitor) const override;
+    virtual void accept(Visitor &visitor) const final;
 
     Token::LiteralValue getValue() const { return m_Value; }
 
@@ -187,7 +207,7 @@ public:
     :  m_Left(std::move(left)), m_Operator(op), m_Right(std::move(right))
     {}
 
-    virtual void accept(Visitor &visitor) const override;
+    virtual void accept(Visitor &visitor) const final;
 
     const Base *getLeft() const { return m_Left.get(); }
     const Token &getOperator() const { return m_Operator; }
@@ -209,7 +229,7 @@ public:
     :  m_VarName(varName), m_Operator(op)
     {}
 
-    virtual void accept(Visitor &visitor) const override;
+    virtual void accept(Visitor &visitor) const final;
 
     const Token &getVarName() const { return m_VarName; }
     const Token &getOperator() const { return m_Operator; }
@@ -229,7 +249,7 @@ public:
     :  m_VarName(varName), m_Operator(op)
     {}
 
-    virtual void accept(Visitor &visitor) const override;
+    virtual void accept(Visitor &visitor) const final;
 
     const Token &getVarName() const { return m_VarName; }
     const Token &getOperator() const { return m_Operator; }
@@ -249,9 +269,9 @@ public:
     :  m_Name(name)
     {}
 
-    virtual void accept(Visitor &visitor) const override;
+    virtual void accept(Visitor &visitor) const final;
 
-   const Token &getName() const { return m_Name; }
+    const Token &getName() const { return m_Name; }
 
 private:
     const Token m_Name;
@@ -267,7 +287,7 @@ public:
     :  m_Operator(op), m_Right(std::move(right))
     {}
 
-    virtual void accept(Visitor &visitor) const override;
+    virtual void accept(Visitor &visitor) const final;
 
     const Token &getOperator() const { return m_Operator; }
     const Base *getRight() const { return m_Right.get(); }
@@ -284,6 +304,7 @@ private:
 class Visitor
 {
 public:
+    virtual void visit(const ArraySubscript &arraySubscript) = 0;
     virtual void visit(const Assignment &assignement) = 0;
     virtual void visit(const Binary &binary) = 0;
     virtual void visit(const Call &call) = 0;

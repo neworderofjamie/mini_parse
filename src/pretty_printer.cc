@@ -23,6 +23,13 @@ std::string PrettyPrinter::print(const Statement::StatementList &statements)
     return m_StringStream.str();
 }
 //---------------------------------------------------------------------------
+void PrettyPrinter::visit(const Expression::ArraySubscript &arraySubscript)
+{
+    m_StringStream << arraySubscript.getArrayName().lexeme << "[";
+    arraySubscript.getIndex()->accept(*this);
+    m_StringStream << "]";
+}
+//---------------------------------------------------------------------------
 void PrettyPrinter::visit(const Expression::Assignment &assignement)
 {
     m_StringStream << assignement.getVarName().lexeme << " " << assignement.getOperator().lexeme << " ";

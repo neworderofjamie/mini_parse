@@ -177,11 +177,9 @@ int main()
             "print x;\n"
             "print sqrt(x);\n", errorHandler);*/
         const auto tokens = Scanner::scanSource(
-            "switch(4) {\n"
-            "   case 2: print(2);\n"
-            "   case 3: print(3); break;\n"
-            "   default: print(0);\n"
-            "}\n"
+            "print floatArray[0];\n"
+            "print intArray[0];\n"
+            "intArray[66]++;\n"
             "float x = 1.0f;"
             "while(true) {\n"
             "   x *= 0.9f;\n"
@@ -190,9 +188,12 @@ int main()
             "       break;\n"
             "   }\n"
             "}\n", errorHandler);
+        assert(!errorHandler.hasError());
+        
         // Parse
         auto statements = Parser::parseBlockItemList(tokens, errorHandler);
-        
+        assert(!errorHandler.hasError());
+
         TypeChecker::Environment typeEnvironment;
         
         typeEnvironment.define<Type::Double>("Isyn", true); 
@@ -207,19 +208,22 @@ int main()
         typeEnvironment.define<Type::Double>("m");
         typeEnvironment.define<Type::Double>("h");
         typeEnvironment.define<Type::Double>("n");
+        typeEnvironment.define<Type::Int32Array>("intArray");
+        typeEnvironment.define<Type::FloatArray>("floatArray");
         typeEnvironment.define<Type::Exp>("exp");
         typeEnvironment.define<Type::Sqrt>("sqrt");
         TypeChecker::typeCheck(statements, typeEnvironment, errorHandler);
-       
+        assert(!errorHandler.hasError());
+
         PrettyPrinter printer;
         std::cout << printer.print(statements) << std::endl;
         
 
-        Sqrt sqrt;
+        /*Sqrt sqrt;
         Interpreter::Environment environment;
         environment.define("sqrt", sqrt);
         Interpreter interpreter;
-        interpreter.interpret(statements, environment);
+        interpreter.interpret(statements, environment);*/
     }
     catch(const std::exception &e) {
         std::cerr << e.what() << std::endl;

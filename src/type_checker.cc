@@ -56,6 +56,33 @@ public:
     //---------------------------------------------------------------------------
     // Expression::Visitor virtuals
     //---------------------------------------------------------------------------
+    virtual void visit(const Expression::ArraySubscript &arraySubscript) final
+    {
+        // Get array type
+        auto arrayType = std::get<0>(m_Environment->getType(arraySubscript.getArrayName(), m_ErrorHandler));
+        auto arrayArrayType = dynamic_cast<const Type::NumericArrayBase *>(arrayType);
+
+        // If array isn't an array at all, give error
+        if(arrayArrayType == nullptr) {
+            m_ErrorHandler.error(arraySubscript.getArrayName(), "Subscripted object is not an array");
+            throw TypeCheckError();
+        }
+        // Otherwise
+        else {
+            // Evaluate array type
+            auto indexType = evaluateType(arraySubscript.getIndex().get());
+            auto indexNumericType = dynamic_cast<const Type::NumericBase*>(indexType);
+            if(indexNumericType == nullptr || !indexNumericType->isIntegral()) {
+                m_ErrorHandler.error(arraySubscript.getArrayName(),
+                                     "Invalid subscript index type '" + indexType->getTypeName() + "'");
+                throw TypeCheckError();
+            }
+            
+            // Use value type of array
+            m_Type = arrayArrayType->getValueType();
+        }
+    }
+
     virtual void visit(const Expression::Assignment &assignment) final
     {
         auto rhsType = evaluateType(assignment.getValue());
@@ -109,7 +136,6 @@ public:
     virtual void visit(const Expression::Call &call) final
     {
         // Evaluate callee type
-        // **NOTE** we can't call evaluate as that returns a value
         auto calleeType = evaluateType(call.getCallee());
         auto calleeFunctionType = dynamic_cast<const Type::ForeignFunctionBase *>(calleeType);
 

@@ -255,6 +255,11 @@ void Interpreter::interpret(const Statement::StatementList &statements, Environm
     m_Environment = previous;
 }
 //---------------------------------------------------------------------------
+void Interpreter::visit(const Expression::ArraySubscript &arraySubscript)
+{
+    assert(false);
+}
+//---------------------------------------------------------------------------
 void Interpreter::visit(const Expression::Assignment &assignment)
 {
     auto value = evaluate(assignment.getValue());

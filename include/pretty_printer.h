@@ -24,6 +24,7 @@ public:
     //---------------------------------------------------------------------------
     // Expression::Visitor virtuals
     //---------------------------------------------------------------------------
+    virtual void visit(const Expression::ArraySubscript &arraySubscript) final;
     virtual void visit(const Expression::Assignment &assignement) final;
     virtual void visit(const Expression::Binary &binary) final;
     virtual void visit(const Expression::Call &call) final;

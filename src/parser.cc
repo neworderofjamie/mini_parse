@@ -2,6 +2,7 @@
 
 // Standard C++ includes
 #include <map>
+#include <optional>
 #include <set>
 #include <stack>
 #include <stdexcept>
@@ -242,7 +243,7 @@ Expression::ExpressionPtr parsePostfix(ParserState &parserState)
 {
     // postfix-expression ::=
     //      primary-expression
-    //      postfix-expression "[" expression "]"   // **TODO**
+    //      postfix-expression "[" expression "]"
     //      postfix-expression "(" argument-expression-list? ")"
     //      postfix-expression "++"
     //      postfix-expression "--"
@@ -272,6 +273,23 @@ Expression::ExpressionPtr parsePostfix(ParserState &parserState)
                                                             closingParen,
                                                             std::move(arguments));
         }
+        // Otherwise, if this is an array index
+        if(parserState.match(Token::Type::LEFT_SQUARE_BRACKET)) {
+            auto index = parseExpression(parserState);
+            Token closingSquareBracket = parserState.consume(Token::Type::RIGHT_SQUARE_BRACKET,
+                                                             "Expect ']' after index.");
+
+            // **TODO** everything all the way up(?) from unary are l-value so can be used - not just variable
+            auto expressionVariable = dynamic_cast<const Expression::Variable*>(expression.get());
+            if(expressionVariable != nullptr) {
+                expression = std::make_unique<Expression::ArraySubscript>(expressionVariable->getName(),
+                                                                          std::move(index));
+            }
+            else {
+                parserState.error(closingSquareBracket, "Invalid subscript target");
+            }
+        }
+        // Otherwise if this is an increment or decrement
         else if(parserState.match({Token::Type::PLUS_PLUS, Token::Type::MINUS_MINUS})) {
             Token op = parserState.previous();
 

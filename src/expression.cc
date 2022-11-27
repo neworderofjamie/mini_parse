@@ -7,6 +7,7 @@
     }
 
 
+IMPLEMENT_ACCEPT(ArraySubscript)
 IMPLEMENT_ACCEPT(Assignment)
 IMPLEMENT_ACCEPT(Binary)
 IMPLEMENT_ACCEPT(Call)
