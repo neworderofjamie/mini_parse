@@ -374,6 +374,12 @@ public:
         for(const auto &var : varDeclaration.getInitDeclaratorList()) {
             m_Environment->define(std::get<0>(var), varDeclaration.getType(), 
                                   varDeclaration.isConst(), m_ErrorHandler);
+
+            // If variable has an initialiser expression, visit it
+            // **TODO** with only numeric types, assignment doesn't require type check but pointers will
+            if (std::get<1>(var) != nullptr) {
+                std::get<1>(var)->accept(*this);
+            }
         }
     }
 
