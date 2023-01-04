@@ -14,7 +14,7 @@ class Visitor;
 }
 namespace Type
 {
-class NumericBase;
+class Base;
 }
 
 //---------------------------------------------------------------------------
@@ -123,17 +123,17 @@ private:
 class Cast : public Base
 {
 public:
-    Cast(const Type::NumericBase *type, ExpressionPtr expression)
+    Cast(const Type::Base *type, ExpressionPtr expression)
     :  m_Type(type), m_Expression(std::move(expression))
     {}
 
     virtual void accept(Visitor &visitor) const final;
 
     const Base *getExpression() const { return m_Expression.get(); }
-    const Type::NumericBase *getType() const { return m_Type; }
+    const Type::Base *getType() const { return m_Type; }
 
 private:
-    const Type::NumericBase *m_Type;
+    const Type::Base *m_Type;
     const ExpressionPtr m_Expression;
 };
 

@@ -181,7 +181,7 @@ Expression::ExpressionPtr parseBinary(ParserState &parserState, N nonTerminal, s
     return expression;
 }
 
-std::tuple<const Type::NumericBase*, bool> parseDeclarationSpecifiers(ParserState &parserState)
+std::tuple<const Type::Base*, bool> parseDeclarationSpecifiers(ParserState &parserState)
 {
     // Loop through type qualifier and specifier tokens
     std::set<std::string_view> typeQualifiers{};
@@ -201,7 +201,9 @@ std::tuple<const Type::NumericBase*, bool> parseDeclarationSpecifiers(ParserStat
     } while(parserState.match({Token::Type::TYPE_QUALIFIER, Token::Type::TYPE_SPECIFIER}));
     
     // Lookup type
-    const auto *type = Type::getNumericType(typeSpecifiers);
+    const Type::Base *type = (parserState.match({Token::Type::STAR}) 
+                              ? static_cast<const Type::Base*>(Type::getNumericPtrType(typeSpecifiers))
+                              : static_cast<const Type::Base*>(Type::getNumericType(typeSpecifiers)));
     if(type == nullptr) {
         parserState.error("Unknown type specifier");
     }

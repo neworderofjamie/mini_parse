@@ -14,7 +14,7 @@ class Visitor;
 }
 namespace Type
 {
-class NumericBase;
+class Base;
 }
 
 //---------------------------------------------------------------------------
@@ -223,19 +223,19 @@ class VarDeclaration : public Base
 public:
     typedef std::vector<std::tuple<Token, MiniParse::Expression::ExpressionPtr>> InitDeclaratorList;
 
-    VarDeclaration(const Type::NumericBase *type, bool isConst, InitDeclaratorList initDeclaratorList)
+    VarDeclaration(const Type::Base *type, bool isConst, InitDeclaratorList initDeclaratorList)
     :   m_Type(type), m_Const(isConst), m_InitDeclaratorList(std::move(initDeclaratorList))
     {}
 
     virtual void accept(Visitor &visitor) const override;
 
-    const Type::NumericBase *getType() const { return m_Type; }
+    const Type::Base *getType() const { return m_Type; }
     bool isConst() const { return m_Const; }
     
     const InitDeclaratorList &getInitDeclaratorList() const { return m_InitDeclaratorList; }
     
 private:
-    const Type::NumericBase *m_Type;
+    const Type::Base *m_Type;
     const bool m_Const;
     const std::vector<Token> m_DeclarationSpecifiers;
     const InitDeclaratorList m_InitDeclaratorList;

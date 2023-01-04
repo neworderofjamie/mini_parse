@@ -293,6 +293,7 @@ DECLARE_FOREIGN_FUNCTION_TYPE(Sqrt, Double, Double);
 
 //! Look up type based on set of type specifiers
 const NumericBase *getNumericType(const std::set<std::string_view> &typeSpecifiers);
+const NumericPtrBase *getNumericPtrType(const std::set<std::string_view> &typeSpecifiers);
 const NumericBase *getPromotedType(const NumericBase *type);
 const NumericBase *getCommonType(const NumericBase *a, const NumericBase *b);
 }   // namespace Type

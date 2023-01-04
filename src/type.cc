@@ -68,6 +68,12 @@ const NumericBase *getNumericType(const std::set<std::string_view> &typeSpecifie
     return (type == numericTypes.cend()) ? nullptr : type->second;
 }
 //----------------------------------------------------------------------------
+const NumericPtrBase *getNumericPtrType(const std::set<std::string_view> &typeSpecifiers)
+{
+    const auto type = numericTypes.find(typeSpecifiers);
+    return (type == numericTypes.cend()) ? nullptr : type->second->getPointerType();
+}
+//----------------------------------------------------------------------------
 const NumericBase *getPromotedType(const NumericBase *type)
 {
     // If a small integer type is used in an expression, it is implicitly converted to int which is always signed. 
