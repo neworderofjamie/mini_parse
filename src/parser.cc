@@ -160,6 +160,7 @@ void synchronise(ParserState &parserState)
 }
 
 // Forward declarations
+Expression::ExpressionPtr parseCast(ParserState &parserState);
 Expression::ExpressionPtr parseAssignment(ParserState &parserState);
 Expression::ExpressionPtr parseExpression(ParserState &parserState);
 Statement::StatementPtr parseBlockItem(ParserState &parserState);
@@ -317,15 +318,18 @@ Expression::ExpressionPtr parseUnary(ParserState &parserState)
     //      postfix-expression
     //      "++" unary-expression
     //      "--" unary-expression
+    //      "&" cast-expression
+    //      "*" cast-expression
     //      "+" cast-expression
     //      "-" cast-expression
     //      "~" cast-expression
     //      "!" cast-expression
     //      "sizeof" unary-expression       **TODO** 
     //      "sizeof" "(" type-name ")"      **TODO** 
-    if(parserState.match({Token::Type::PLUS, Token::Type::MINUS, Token::Type::TILDA, Token::Type::NOT})) {
+    if(parserState.match({Token::Type::AMPERSAND, Token::Type::STAR, Token::Type::PLUS, 
+                         Token::Type::MINUS, Token::Type::TILDA, Token::Type::NOT})) {
         Token op = parserState.previous();
-        return std::make_unique<Expression::Unary>(op, parseUnary(parserState));
+        return std::make_unique<Expression::Unary>(op, parseCast(parserState));
     }
     else if(parserState.match({Token::Type::PLUS_PLUS, Token::Type::MINUS_MINUS})) {
         Token op = parserState.previous();
