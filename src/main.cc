@@ -149,11 +149,12 @@ int main()
     ::ErrorHandler errorHandler;
     try
     {
+        std::cout << "SCANNING" << std::endl;
         // Scan
-        /*const std::string source = removeOldStyleVar(test3);
+        const std::string source = removeOldStyleVar(test3);
         const auto tokens = MiniParse::Scanner::scanSource(
             source, errorHandler);
-        const auto tokens = MiniParse::Scanner::scanSource(
+        /*const auto tokens = MiniParse::Scanner::scanSource(
             "int x = 4, y;\n"
             "print ((12 + x) * 5) + 3;\n"
             "y = 12;\n"
@@ -175,7 +176,7 @@ int main()
         const auto tokens = MiniParse::Scanner::scanSource(
             "double x = 2.0f;\n"
             "print x;\n"
-            "print sqrt(x);\n", errorHandler);*/
+            "print sqrt(x);\n", errorHandler);
         const auto tokens = Scanner::scanSource(
             "print floatArray[0];\n"
             "print intArray[0];\n"
@@ -187,12 +188,17 @@ int main()
             "   if(x < 0.1f) {\n"
             "       break;\n"
             "   }\n"
-            "}\n", errorHandler);
+            "}\n", errorHandler);*/
         assert(!errorHandler.hasError());
         
+        std::cout << "PARSING" << std::endl;
+
         // Parse
         auto statements = Parser::parseBlockItemList(tokens, errorHandler);
         assert(!errorHandler.hasError());
+
+
+        std::cout << "TYPE CHECKING" << std::endl;
 
         TypeChecker::Environment typeEnvironment;
         
@@ -215,8 +221,10 @@ int main()
         TypeChecker::typeCheck(statements, typeEnvironment, errorHandler);
         assert(!errorHandler.hasError());
 
+        std::cout << "PRETTY PRINTING" << std::endl;
         std::cout << PrettyPrinter::print(statements) << std::endl;
         
+        std::cout << "INTERPRETTING" << std::endl;
         Sqrt sqrt;
         Interpreter::Environment environment;
         environment.define("sqrt", sqrt);
