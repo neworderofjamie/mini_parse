@@ -33,14 +33,19 @@
         DECLARE_TYPE(TYPE)                                                  \
         virtual std::string getTypeName() const{ return #UNDERLYING_TYPE; } \
     };                                                                      \
-    class TYPE##Ptr : public NumericPtr<TYPE>                           \
+    class TYPE##Ptr : public NumericPtr<TYPE>                               \
     {                                                                       \
-        DECLARE_TYPE(TYPE##Ptr)                                           \
+        DECLARE_TYPE(TYPE##Ptr)                                             \
     };                                                                      \
     template<>                                                              \
     struct TypeTraits<UNDERLYING_TYPE>                                      \
     {                                                                       \
         using NumericType = TYPE;                                           \
+    };                                                                      \
+    template<>                                                              \
+    struct TypeTraits<UNDERLYING_TYPE*>                                     \
+    {                                                                       \
+        using NumericPtrType = TYPE##Ptr;                                   \
     }
 
 #define DECLARE_FOREIGN_FUNCTION_TYPE(TYPE, RETURN_TYPE, ...)       \
@@ -66,7 +71,7 @@ struct TypeTraits
 //----------------------------------------------------------------------------
 // Type::Base
 //----------------------------------------------------------------------------
-//! Base class for all supported numericTypes
+//! Base class for all types
 class Base
 {
 public:
@@ -92,8 +97,21 @@ public:
     virtual double getLowest() const = 0;
     virtual bool isSigned() const = 0;
     virtual bool isIntegral() const = 0;
+
+    virtual const class NumericPtrBase *getPointerType() const = 0;
 };
 
+//----------------------------------------------------------------------------
+// NumericPtrBase
+//----------------------------------------------------------------------------
+class NumericPtrBase : public Base
+{
+public:
+    //------------------------------------------------------------------------
+    // Declared virtuals
+    //------------------------------------------------------------------------
+    virtual const NumericBase *getValueType() const = 0;
+};
 
 //----------------------------------------------------------------------------
 // Type::Numeric
@@ -121,18 +139,11 @@ public:
     virtual double getLowest() const final { return std::numeric_limits<T>::lowest(); }
     virtual bool isSigned() const final { return std::is_signed<T>::value; }
     virtual bool isIntegral() const final { return std::is_integral<T>::value; }
-};
-
-//----------------------------------------------------------------------------
-// NumericPtrBase
-//----------------------------------------------------------------------------
-class NumericPtrBase : public Base
-{
-public:
-    //------------------------------------------------------------------------
-    // Declared virtuals
-    //------------------------------------------------------------------------
-    virtual const NumericBase *getValueType() const = 0;
+    
+    virtual const NumericPtrBase *getPointerType() const
+    { 
+        return TypeTraits<std::add_pointer_t<UnderlyingType>>::NumericPtrType::getInstance(); 
+    }
 };
 
 //----------------------------------------------------------------------------
