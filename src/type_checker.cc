@@ -99,37 +99,76 @@ public:
             m_Type = rightType;
         }
         else {
-            // If either of the types is non-numeric
+            // If we're subtracting two pointers
             auto leftType = evaluateType(binary.getLeft());
             auto leftNumericType = dynamic_cast<const Type::NumericBase *>(leftType);
             auto rightNumericType = dynamic_cast<const Type::NumericBase *>(rightType);
-            if(leftNumericType == nullptr || rightNumericType == nullptr) {
-                m_ErrorHandler.error(binary.getOperator(), "Invalid operand types '" + leftType->getTypeName() + "' and '" + rightType->getTypeName());
-                throw TypeCheckError();
-            }
-            // Otherwise, if operator requires integer operands
-            else if(opType == Token::Type::PERCENT || opType == Token::Type::SHIFT_LEFT 
-                    || opType == Token::Type::SHIFT_RIGHT || opType == Token::Type::CARET 
-                    || opType == Token::Type::AMPERSAND || opType == Token::Type::PIPE)
-            {
-                // Check that operands are integers
-                if(!leftNumericType->isIntegral() || !rightNumericType->isIntegral()) {
+            auto leftNumericPtrType = dynamic_cast<const Type::NumericPtrBase *>(leftType);
+            auto rightNumericPtrType = dynamic_cast<const Type::NumericPtrBase *>(rightType);
+            if (leftNumericPtrType != nullptr && rightNumericPtrType != nullptr && opType == Token::Type::MINUS) {
+                // Check pointers are compatible
+                if (leftNumericPtrType->getTypeHash() != rightNumericPtrType->getTypeHash()) {
                     m_ErrorHandler.error(binary.getOperator(), "Invalid operand types '" + leftType->getTypeName() + "' and '" + rightType->getTypeName());
                     throw TypeCheckError();
                 }
 
-                // If operator is a shift, promote left type
-                if(opType == Token::Type::SHIFT_LEFT || opType == Token::Type::SHIFT_RIGHT) {
-                    m_Type = Type::getPromotedType(leftNumericType);
+                // **TODO** should be std::ptrdiff/Int64
+                m_Type = Type::Int32::getInstance();
+            }
+            // Otherwise, if we're adding to or subtracting from pointers
+            else if (leftNumericPtrType != nullptr && rightNumericType != nullptr && (opType == Token::Type::PLUS || opType == Token::Type::MINUS))       // P + n or P - n
+            {
+                // Check that numeric operand is integer
+                if (!rightNumericType->isIntegral()) {
+                    m_ErrorHandler.error(binary.getOperator(), "Invalid operand types '" + leftType->getTypeName() + "' and '" + rightType->getTypeName());
+                    throw TypeCheckError();
                 }
-                // Otherwise, take common type
+
+                // Use pointer type
+                m_Type = leftNumericPtrType;
+            }
+            // Otherwise, if we're adding to pointers
+            else if (leftNumericType != nullptr && rightNumericPtrType != nullptr && opType == Token::Type::PLUS)  // n + P
+            {
+                // Check that numeric operand is integer
+                if (!leftNumericType->isIntegral()) {
+                    m_ErrorHandler.error(binary.getOperator(), "Invalid operand types '" + leftType->getTypeName() + "' and '" + rightType->getTypeName());
+                    throw TypeCheckError();
+                }
+
+                // Use pointer type
+                m_Type = rightNumericPtrType;
+            }
+            // Otherwise, if both operands are numeric
+            else if (leftNumericType != nullptr && rightNumericType != nullptr) {
+                // Otherwise, if operator requires integer operands
+                if (opType == Token::Type::PERCENT || opType == Token::Type::SHIFT_LEFT
+                    || opType == Token::Type::SHIFT_RIGHT || opType == Token::Type::CARET
+                    || opType == Token::Type::AMPERSAND || opType == Token::Type::PIPE)
+                {
+                    // Check that operands are integers
+                    if (!leftNumericType->isIntegral() || !rightNumericType->isIntegral()) {
+                        m_ErrorHandler.error(binary.getOperator(), "Invalid operand types '" + leftType->getTypeName() + "' and '" + rightType->getTypeName());
+                        throw TypeCheckError();
+                    }
+
+                    // If operator is a shift, promote left type
+                    if (opType == Token::Type::SHIFT_LEFT || opType == Token::Type::SHIFT_RIGHT) {
+                        m_Type = Type::getPromotedType(leftNumericType);
+                    }
+                    // Otherwise, take common type
+                    else {
+                        m_Type = Type::getCommonType(leftNumericType, rightNumericType);
+                    }
+                }
+                // Otherwise, any numeric type will do, take common type
                 else {
                     m_Type = Type::getCommonType(leftNumericType, rightNumericType);
                 }
             }
-            // Otherwise, any numeric type will do, take common type
             else {
-                m_Type = Type::getCommonType(leftNumericType, rightNumericType);
+                m_ErrorHandler.error(binary.getOperator(), "Invalid operand types '" + leftType->getTypeName() + "' and '" + rightType->getTypeName());
+                throw TypeCheckError();
             }
         }
     }
@@ -232,32 +271,52 @@ public:
     virtual void visit(const Expression::Unary &unary) final
     {
         auto rightType = evaluateType(unary.getRight());
-        auto rightNumericType = dynamic_cast<const Type::NumericBase*>(rightType);
-        if(rightNumericType == nullptr) {
-            m_ErrorHandler.error(unary.getOperator(), 
-                                 "Invalid operand type '" + rightType->getTypeName() + "'");
-            throw TypeCheckError();
-        }
-        else {
-            // If operator is arithmetic, return promoted type
-            if(unary.getOperator().type == Token::Type::PLUS || unary.getOperator().type == Token::Type::MINUS) {
-                m_Type = Type::getPromotedType(rightNumericType);
+
+        // If operator is pointer de-reference
+        if (unary.getOperator().type == Token::Type::STAR) {
+            auto rightNumericPtrType = dynamic_cast<const Type::NumericPtrBase *>(rightType);
+            if (rightNumericPtrType == nullptr) {
+                m_ErrorHandler.error(unary.getOperator(),
+                                     "Invalid operand type '" + rightType->getTypeName() + "'");
+                throw TypeCheckError();
             }
-            // Otherwise, if operator is bitwise
-            else if(unary.getOperator().type == Token::Type::TILDA) {
-                // If type is integer, return promoted type
-                if(rightNumericType->isIntegral()) {
+
+            // Return value type
+            m_Type = rightNumericPtrType->getValueType();
+        }
+        // Otherwise
+        else {
+            auto rightNumericType = dynamic_cast<const Type::NumericBase *>(rightType);
+            if (rightNumericType == nullptr) {
+                m_ErrorHandler.error(unary.getOperator(),
+                                     "Invalid operand type '" + rightType->getTypeName() + "'");
+                throw TypeCheckError();
+            }
+            else {
+                // If operator is arithmetic, return promoted type
+                if (unary.getOperator().type == Token::Type::PLUS || unary.getOperator().type == Token::Type::MINUS) {
                     m_Type = Type::getPromotedType(rightNumericType);
                 }
-                else {
-                    m_ErrorHandler.error(unary.getOperator(),
-                                         "Invalid operand type '" + rightType->getTypeName() + "'");
-                    throw TypeCheckError();
+                // Otherwise, if operator is bitwise
+                else if (unary.getOperator().type == Token::Type::TILDA) {
+                    // If type is integer, return promoted type
+                    if (rightNumericType->isIntegral()) {
+                        m_Type = Type::getPromotedType(rightNumericType);
+                    }
+                    else {
+                        m_ErrorHandler.error(unary.getOperator(),
+                                             "Invalid operand type '" + rightType->getTypeName() + "'");
+                        throw TypeCheckError();
+                    }
                 }
-            }
-            // Otherwise, if operator is logical
-            else if(unary.getOperator().type == Token::Type::NOT) {
-                m_Type = Type::Int32::getInstance();
+                // Otherwise, if operator is logical
+                else if (unary.getOperator().type == Token::Type::NOT) {
+                    m_Type = Type::Int32::getInstance();
+                }
+                // Otherwise, if operator is address of, return pointer type
+                else if (unary.getOperator().type == Token::Type::AMPERSAND) {
+                    m_Type = rightNumericType->getPointerType();
+                }
             }
         }
     }
