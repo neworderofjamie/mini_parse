@@ -59,13 +59,13 @@ public:
     //---------------------------------------------------------------------------
     virtual void visit(const Expression::ArraySubscript &arraySubscript) final
     {
-        // Get array type
-        auto arrayType = std::get<0>(m_Environment->getType(arraySubscript.getArrayName(), m_ErrorHandler));
-        auto arrayArrayType = dynamic_cast<const Type::NumericArrayBase *>(arrayType);
+        // Get pointer type
+        auto pointerType = dynamic_cast<const Type::NumericPtrBase *>(
+            std::get<0>(m_Environment->getType(arraySubscript.getPointerName(), m_ErrorHandler)));
 
-        // If array isn't an array at all, give error
-        if(arrayArrayType == nullptr) {
-            m_ErrorHandler.error(arraySubscript.getArrayName(), "Subscripted object is not an array");
+        // If pointer isn't a pointer at all, give error
+        if(pointerType == nullptr) {
+            m_ErrorHandler.error(arraySubscript.getPointerName(), "Subscripted object is not a pointer");
             throw TypeCheckError();
         }
         // Otherwise
@@ -74,13 +74,13 @@ public:
             auto indexType = evaluateType(arraySubscript.getIndex().get());
             auto indexNumericType = dynamic_cast<const Type::NumericBase*>(indexType);
             if(indexNumericType == nullptr || !indexNumericType->isIntegral()) {
-                m_ErrorHandler.error(arraySubscript.getArrayName(),
+                m_ErrorHandler.error(arraySubscript.getPointerName(),
                                      "Invalid subscript index type '" + indexType->getTypeName() + "'");
                 throw TypeCheckError();
             }
             
             // Use value type of array
-            m_Type = arrayArrayType->getValueType();
+            m_Type = pointerType->getValueType();
         }
     }
 

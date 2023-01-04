@@ -46,7 +46,7 @@ public:
     //---------------------------------------------------------------------------
     virtual void visit(const Expression::ArraySubscript &arraySubscript) final
     {
-        m_StringStream << arraySubscript.getArrayName().lexeme << "[";
+        m_StringStream << arraySubscript.getPointerName().lexeme << "[";
         arraySubscript.getIndex()->accept(*this);
         m_StringStream << "]";
     }

@@ -37,17 +37,17 @@ typedef std::vector<ExpressionPtr> ExpressionList;
 class ArraySubscript : public Base
 {
 public:
-    ArraySubscript(Token arrayName, ExpressionPtr index)
-    :  m_ArrayName(arrayName), m_Index(std::move(index))
+    ArraySubscript(Token pointerName, ExpressionPtr index)
+    :  m_PointerName(pointerName), m_Index(std::move(index))
     {}
 
     virtual void accept(Visitor &visitor) const final;
 
-    const Token &getArrayName() const { return m_ArrayName; }
+    const Token &getPointerName() const { return m_PointerName; }
     const ExpressionPtr &getIndex() const { return m_Index; }
 
 private:
-    const Token m_ArrayName;
+    const Token m_PointerName;
     const ExpressionPtr m_Index;
 };
 

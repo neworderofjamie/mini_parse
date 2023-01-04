@@ -33,9 +33,9 @@
         DECLARE_TYPE(TYPE)                                                  \
         virtual std::string getTypeName() const{ return #UNDERLYING_TYPE; } \
     };                                                                      \
-    class TYPE##Array : public NumericArray<TYPE>                           \
+    class TYPE##Ptr : public NumericPtr<TYPE>                           \
     {                                                                       \
-        DECLARE_TYPE(TYPE##Array)                                           \
+        DECLARE_TYPE(TYPE##Ptr)                                           \
     };                                                                      \
     template<>                                                              \
     struct TypeTraits<UNDERLYING_TYPE>                                      \
@@ -50,7 +50,7 @@
     }
 
 #define IMPLEMENT_TYPE(TYPE) TYPE *TYPE::s_Instance = NULL
-#define IMPLEMENT_NUMERIC_TYPE(TYPE) IMPLEMENT_TYPE(TYPE); IMPLEMENT_TYPE(TYPE##Array)
+#define IMPLEMENT_NUMERIC_TYPE(TYPE) IMPLEMENT_TYPE(TYPE); IMPLEMENT_TYPE(TYPE##Ptr)
 
 //----------------------------------------------------------------------------
 // Type::TypeTraits
@@ -124,9 +124,9 @@ public:
 };
 
 //----------------------------------------------------------------------------
-// NumericArrayBase
+// NumericPtrBase
 //----------------------------------------------------------------------------
-class NumericArrayBase : public Base
+class NumericPtrBase : public Base
 {
 public:
     //------------------------------------------------------------------------
@@ -136,10 +136,10 @@ public:
 };
 
 //----------------------------------------------------------------------------
-// NumericArray
+// NumericPtr
 //----------------------------------------------------------------------------
 template<typename T>
-class NumericArray : public NumericArrayBase
+class NumericPtr : public NumericPtrBase
 {
 public:
     //------------------------------------------------------------------------

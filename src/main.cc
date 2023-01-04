@@ -202,6 +202,7 @@ int main()
 
         TypeChecker::Environment typeEnvironment;
         
+        typeEnvironment.define<Type::Double>("DT", true);
         typeEnvironment.define<Type::Double>("Isyn", true); 
         typeEnvironment.define<Type::Double>("gNa", true);
         typeEnvironment.define<Type::Double>("ENa", true);
@@ -214,8 +215,8 @@ int main()
         typeEnvironment.define<Type::Double>("m");
         typeEnvironment.define<Type::Double>("h");
         typeEnvironment.define<Type::Double>("n");
-        typeEnvironment.define<Type::Int32Array>("intArray");
-        typeEnvironment.define<Type::FloatArray>("floatArray");
+        typeEnvironment.define<Type::Int32Ptr>("intArray");
+        typeEnvironment.define<Type::FloatPtr>("floatArray");
         typeEnvironment.define<Type::Exp>("exp");
         typeEnvironment.define<Type::Sqrt>("sqrt");
         TypeChecker::typeCheck(statements, typeEnvironment, errorHandler);
