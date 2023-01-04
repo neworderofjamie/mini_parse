@@ -123,17 +123,20 @@ private:
 class Cast : public Base
 {
 public:
-    Cast(const Type::Base *type, ExpressionPtr expression)
-    :  m_Type(type), m_Expression(std::move(expression))
+    Cast(const Type::Base *type, bool isConst, ExpressionPtr expression)
+    :  m_Type(type), m_Const(isConst), m_Expression(std::move(expression))
     {}
 
     virtual void accept(Visitor &visitor) const final;
 
     const Base *getExpression() const { return m_Expression.get(); }
+    
     const Type::Base *getType() const { return m_Type; }
+    bool isConst() const { return m_Const; }
 
 private:
     const Type::Base *m_Type;
+    bool m_Const;
     const ExpressionPtr m_Expression;
 };
 

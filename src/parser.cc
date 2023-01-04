@@ -365,7 +365,7 @@ Expression::ExpressionPtr parseCast(ParserState &parserState)
 
             parserState.consume(Token::Type::RIGHT_PAREN, "Expect ')' after cast type.");
 
-            return std::make_unique<Expression::Cast>(type, parseCast(parserState));
+            return std::make_unique<Expression::Cast>(type, isConst, parseCast(parserState));
         }
         // Otherwise, rewind parser state so left parenthesis can be parsed again
         // **YUCK**
