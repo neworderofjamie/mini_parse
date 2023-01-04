@@ -217,12 +217,10 @@ int main()
 
         std::cout << PrettyPrinter::print(statements) << std::endl;
         
-
-        /*Sqrt sqrt;
+        Sqrt sqrt;
         Interpreter::Environment environment;
         environment.define("sqrt", sqrt);
-        Interpreter interpreter;
-        interpreter.interpret(statements, environment);*/
+        Interpreter::interpret(statements, environment);
     }
     catch(const std::exception &e) {
         std::cerr << e.what() << std::endl;
