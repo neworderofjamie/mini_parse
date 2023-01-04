@@ -215,8 +215,7 @@ int main()
         TypeChecker::typeCheck(statements, typeEnvironment, errorHandler);
         assert(!errorHandler.hasError());
 
-        PrettyPrinter printer;
-        std::cout << printer.print(statements) << std::endl;
+        std::cout << PrettyPrinter::print(statements) << std::endl;
         
 
         /*Sqrt sqrt;
