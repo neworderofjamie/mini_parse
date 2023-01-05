@@ -94,6 +94,10 @@ public:
         #pragma warning(disable: 4804)  // unsafe use of type 'bool' in operation
         #pragma warning(disable: 4805)  // unsafe mix of type 'type' and type 'type' in operation
         #pragma warning(disable: 4018)  // signed/unsigned mismatch
+#else
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wsign-compare"
+        
 #endif
         using Type = Token::Type;
 
@@ -164,9 +168,11 @@ public:
                 [](std::monostate, auto)->Token::LiteralValue { throw std::runtime_error("Invalid operand"); },
                 [](auto, std::monostate)->Token::LiteralValue { throw std::runtime_error("Invalid operand"); }},
             leftValue, rightValue);
-    #ifdef _WIN32
+#ifdef _WIN32
             #pragma warning(pop)
-    #endif
+#else
+            #pragma GCC diagnostic pop
+#endif
     }
 
     virtual void visit(const Expression::Call &call) final
@@ -268,6 +274,9 @@ public:
         #pragma warning(push)
         #pragma warning(disable: 4146)  // unary minus operator applied to unsigned type, result still unsigned
         #pragma warning(disable: 4804)  // '~': unsafe use of type 'bool' in operation
+#else
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wbool-operation"
 #endif
         using Type = Token::Type;
 
@@ -299,13 +308,15 @@ public:
             rightValue);
 #ifdef _WIN32
             #pragma warning(pop)
+#else
+            #pragma GCC diagnostic pop
 #endif
     }
     
     //---------------------------------------------------------------------------
     // Statement::Visitor virtuals
     //---------------------------------------------------------------------------
-    virtual void visit(const Statement::Break &breakStatement) final
+    virtual void visit(const Statement::Break&) final
     {
         throw Break();
     }
@@ -316,7 +327,7 @@ public:
         interpret(compound.getStatements(), environment);
     }
 
-    virtual void visit(const Statement::Continue &continueStatement) final
+    virtual void visit(const Statement::Continue&) final
     {
          throw Continue();
     }
