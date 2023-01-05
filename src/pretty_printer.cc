@@ -136,7 +136,7 @@ public:
     //---------------------------------------------------------------------------
     // Statement::Visitor virtuals
     //---------------------------------------------------------------------------
-    virtual void visit(const Statement::Break &breakStatement) final
+    virtual void visit(const Statement::Break&) final
     {
         m_StringStream << "break;";
     }
@@ -151,7 +151,7 @@ public:
         m_StringStream << "}" << std::endl;
     }
 
-    virtual void visit(const Statement::Continue &continueStatement) final
+    virtual void visit(const Statement::Continue&) final
     {
         m_StringStream << "continue;";
     }

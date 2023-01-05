@@ -146,12 +146,13 @@ void synchronise(ParserState &parserState)
         if(parserState.previous().type == Token::Type::SEMICOLON) {
             return;
         }
-
-        switch(parserState.peek().type) {
-        case Token::Type::FOR:
-        case Token::Type::IF:
-        case Token::Type::WHILE:
-        case Token::Type::TYPE_SPECIFIER:
+    
+        const auto nextTokenType = parserState.peek().type;
+        if(nextTokenType == Token::Type::FOR
+           || nextTokenType == Token::Type::IF
+           || nextTokenType == Token::Type::WHILE
+           || nextTokenType == Token::Type::TYPE_SPECIFIER)
+        {
             return;
         }
 
