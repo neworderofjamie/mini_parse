@@ -233,7 +233,7 @@ public:
 
         for(const auto &var : varDeclaration.getInitDeclaratorList()) {
             m_StringStream << std::get<0>(var).lexeme;
-            if(std::get<1>(var) != nullptr) {
+            if(std::get<1>(var)) {
                 m_StringStream << " = ";
                 std::get<1>(var)->accept(*this);
             }

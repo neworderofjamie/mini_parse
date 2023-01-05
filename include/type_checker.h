@@ -43,7 +43,8 @@ public:
         }
     }
     void define(const Token &name, const Type::Base *type, bool isConst, ErrorHandler &errorHandler);
-    const Type::Base *assign(const Token &name, const Type::Base *type, const Token &op, ErrorHandler &errorHandler);
+    const Type::Base *assign(const Token &name, const Type::Base *assignedType, bool assignedConst, 
+                             Token::Type op, ErrorHandler &errorHandler);
     const Type::Base *incDec(const Token &name, const Token &op, ErrorHandler &errorHandler);
     std::tuple<const Type::Base*, bool> getType(const Token &name, ErrorHandler &errorHandler) const;
 

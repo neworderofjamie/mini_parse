@@ -382,20 +382,71 @@ public:
         if(isTruthy(evaluate(ifStatement.getCondition()))) {
             ifStatement.getThenBranch()->accept(*this);
         }
-        else if(ifStatement.getElseBranch() != nullptr) {
+        else if(ifStatement.getElseBranch()) {
             ifStatement.getElseBranch()->accept(*this);
         }
     }
 
     virtual void visit(const Statement::Labelled &labelled) final
     {
-        assert(false);
+        // If label has a value i.e. it's a case not a default, evaluate value and add to vector of labelled statements
+        if (labelled.getValue()) {
+            m_SwitchLabelledStatements.emplace_back(evaluate(labelled.getValue()), 
+                                                    labelled.getBody());
+        }
+        // Otherwise, add body to vector of labelled statements
+        else {
+            m_SwitchLabelledStatements.emplace_back(std::monostate(), labelled.getBody());
+        }
     }
 
     virtual void visit(const Statement::Switch &switchStatement) final
     {
+        // **TODO** handle nested switch statements
+        assert(m_SwitchLabelledStatements.empty());
+
+        // Visit switch statement body to find labelled statements
+        switchStatement.getBody()->accept(*this);
+
+        // Evaluate value
         auto value = evaluate(switchStatement.getCondition());
-        assert(false);
+
+        bool matched = false;
+        for (const auto &s : m_SwitchLabelledStatements) {
+            try {
+                // If we've already matched out value or this case matches it 
+                if (matched || value == s.first) {
+                    s.second->accept(*this);
+                    matched = true;
+                }
+            }
+            // Break if we encounter break exception and ignore continue exceptions
+            catch(Break&) {
+                break;
+            }
+        }
+        
+        // If a case hasn't yet been found, look for default
+        if (!matched) {
+            for (const auto &s : m_SwitchLabelledStatements) {
+                try {
+                    // If we've already matched our value or this is a default
+                    if (matched || std::holds_alternative<std::monostate>(s.first)) {
+                        s.second->accept(*this);
+                        matched = true;
+                    }
+                }
+                // Break if we encounter break exception and ignore continue exceptions
+                catch(Break&) {
+                    break;
+                }
+            }
+            
+        }
+
+        // Clear out labelled statements
+        // **THINK** exception safety
+        m_SwitchLabelledStatements.clear();
     }
 
     virtual void visit(const Statement::VarDeclaration &varDeclaration) final
@@ -403,7 +454,7 @@ public:
         // **TODO** something with type
         for(const auto &var : varDeclaration.getInitDeclaratorList()) {
             Token::LiteralValue value;
-            if(std::get<1>(var) != nullptr) {
+            if(std::get<1>(var)) {
                 evaluate(std::get<1>(var).get());
                 value = std::get<Token::LiteralValue>(m_Value);
             }
@@ -444,13 +495,14 @@ public:
         value);
 
 #undef PRINT
-}
+    }
 
 private:
     //---------------------------------------------------------------------------
     // Members
     //---------------------------------------------------------------------------
     Environment::Value m_Value;
+    std::vector<std::pair<Token::LiteralValue, const Statement::Base*>> m_SwitchLabelledStatements;
     
     Environment *m_Environment;
 };
@@ -487,11 +539,11 @@ Environment::Value Environment::assign(const Token &name, Token::LiteralValue va
 
     auto variable = m_Values.find(name.lexeme);
     if(variable == m_Values.end()) {
-        if(m_Enclosing == nullptr) {
-            throw std::runtime_error("Undefined variable '" + std::string{name.lexeme} + "' at line " + std::to_string(name.line));
+        if(m_Enclosing) {
+            return m_Enclosing->assign(name, value, op);
         }
         else {
-            return m_Enclosing->assign(name, value, op);
+            throw std::runtime_error("Undefined variable '" + std::string{name.lexeme} + "' at line " + std::to_string(name.line));
         }
     }
     else {
@@ -565,11 +617,11 @@ Environment::Value Environment::prefixIncDec(const Token &name, Token::Type op)
 
     auto variable = m_Values.find(name.lexeme);
     if(variable == m_Values.end()) {
-        if(m_Enclosing == nullptr) {
-            throw std::runtime_error("Undefined variable '" + std::string{name.lexeme} + "' at line " + std::to_string(name.line));
+        if(m_Enclosing) {
+            return m_Enclosing->prefixIncDec(name, op);
         }
         else {
-            return m_Enclosing->prefixIncDec(name, op);
+            throw std::runtime_error("Undefined variable '" + std::string{name.lexeme} + "' at line " + std::to_string(name.line));
         }
     }
     else {
@@ -602,11 +654,11 @@ Environment::Value Environment::postfixIncDec(const Token &name, Token::Type op)
 
     auto variable = m_Values.find(name.lexeme);
     if(variable == m_Values.end()) {
-        if(m_Enclosing == nullptr) {
-            throw std::runtime_error("Undefined variable '" + std::string{name.lexeme} + "' at line " + std::to_string(name.line));
+        if(m_Enclosing) {
+            return m_Enclosing->postfixIncDec(name, op);
         }
         else {
-            return m_Enclosing->postfixIncDec(name, op);
+            throw std::runtime_error("Undefined variable '" + std::string{name.lexeme} + "' at line " + std::to_string(name.line));
         }
     }
     else {
@@ -638,11 +690,11 @@ Environment::Value Environment::get(const Token &name) const
 {
     auto val = m_Values.find(std::string{name.lexeme});
     if(val == m_Values.end()) {
-        if(m_Enclosing == nullptr) {
-            throw std::runtime_error("Undefined variable '" + std::string{name.lexeme} + "' at line " + std::to_string(name.line));
+        if(m_Enclosing) {
+            return m_Enclosing->get(name);
         }
         else {
-            return m_Enclosing->get(name);
+            throw std::runtime_error("Undefined variable '" + std::string{name.lexeme} + "' at line " + std::to_string(name.line));
         }
     }
     else {

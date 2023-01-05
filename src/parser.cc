@@ -204,7 +204,7 @@ std::tuple<const Type::Base*, bool> parseDeclarationSpecifiers(ParserState &pars
     const Type::Base *type = (parserState.match({Token::Type::STAR}) 
                               ? static_cast<const Type::Base*>(Type::getNumericPtrType(typeSpecifiers))
                               : static_cast<const Type::Base*>(Type::getNumericType(typeSpecifiers)));
-    if(type == nullptr) {
+    if(!type) {
         parserState.error("Unknown type specifier");
     }
 
@@ -284,7 +284,7 @@ Expression::ExpressionPtr parsePostfix(ParserState &parserState)
 
             // **TODO** everything all the way up(?) from unary are l-value so can be used - not just variable
             auto expressionVariable = dynamic_cast<const Expression::Variable*>(expression.get());
-            if(expressionVariable != nullptr) {
+            if(expressionVariable) {
                 expression = std::make_unique<Expression::ArraySubscript>(expressionVariable->getName(),
                                                                           std::move(index));
             }
@@ -298,7 +298,7 @@ Expression::ExpressionPtr parsePostfix(ParserState &parserState)
 
             // **TODO** everything all the way up(?) from unary are l-value so can be used - not just variable
             auto expressionVariable = dynamic_cast<const Expression::Variable*>(expression.get());
-            if(expressionVariable != nullptr) {
+            if(expressionVariable) {
                 return std::make_unique<Expression::PostfixIncDec>(expressionVariable->getName(), op);
             }
             else {
@@ -339,7 +339,7 @@ Expression::ExpressionPtr parseUnary(ParserState &parserState)
 
         // **TODO** everything all the way up(?) from unary are l-value so can be used - not just variable
         auto expressionVariable = dynamic_cast<const Expression::Variable*>(expression.get());
-        if(expressionVariable != nullptr) {
+        if(expressionVariable) {
             return std::make_unique<Expression::PrefixIncDec>(expressionVariable->getName(), op);
         }
         else {
@@ -520,7 +520,7 @@ Expression::ExpressionPtr parseAssignment(ParserState &parserState)
 
         // **TODO** everything all the way up(?) from unary are l-value so can be used - not just variable
         auto expressionVariable = dynamic_cast<const Expression::Variable*>(expression.get());
-        if(expressionVariable != nullptr) {
+        if(expressionVariable) {
             return std::make_unique<Expression::Assignment>(expressionVariable->getName(), op, std::move(value));
         }
         else {

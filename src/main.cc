@@ -152,9 +152,9 @@ int main()
         std::cout << "SCANNING" << std::endl;
         // Scan
         const std::string source = removeOldStyleVar(test3);
-        const auto tokens = MiniParse::Scanner::scanSource(
-            source, errorHandler);
         /*const auto tokens = MiniParse::Scanner::scanSource(
+            source, errorHandler);
+        const auto tokens = MiniParse::Scanner::scanSource(
             "int x = 4, y;\n"
             "print ((12 + x) * 5) + 3;\n"
             "y = 12;\n"
@@ -189,6 +189,22 @@ int main()
             "       break;\n"
             "   }\n"
             "}\n", errorHandler);*/
+        const auto tokens = Scanner::scanSource(
+            "int x = 3;\n"
+            "switch(x) {\n"
+            "default:\n"
+            "    print(0);\n"
+            "case 1:\n"
+            "    print(1);\n"
+            "case 3:\n"
+            "    print(3);\n"
+            "case 5:\n"
+            "    print(5);\n"
+            "    break;\n"
+            "case 7:\n"
+            "    print(7);\n"
+            "}\n",
+            errorHandler);
         assert(!errorHandler.hasError());
         
         std::cout << "PARSING" << std::endl;
