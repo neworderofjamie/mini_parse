@@ -6,6 +6,7 @@
 // Standard C++ includes
 #include <limits>
 #include <set>
+#include <string>
 #include <string_view>
 #include <typeinfo>
 #include <type_traits>
@@ -157,7 +158,7 @@ public:
     // Base virtuals
     //------------------------------------------------------------------------
     virtual std::string getTypeName() const final { return T::getInstance()->getTypeName() + "*"; }
-    virtual size_t getTypeHash() const final { return typeid(std::add_pointer_t<T::UnderlyingType>).hash_code(); }
+    virtual size_t getTypeHash() const final { return typeid(std::add_pointer_t<typename T::UnderlyingType>).hash_code(); }
 
     //------------------------------------------------------------------------
     // NumericArrayBase virtuals
