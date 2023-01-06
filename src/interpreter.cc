@@ -1,6 +1,7 @@
 #include "interpreter.h"
 
 // Standard C++ includes
+#include <algorithm>
 #include <limits>
 #include <iostream>
 #include <stdexcept>
@@ -42,6 +43,109 @@ class Break
 //---------------------------------------------------------------------------
 class Continue
 {
+};
+
+//---------------------------------------------------------------------------
+// SwitchLabelVisitor
+//---------------------------------------------------------------------------
+class SwitchLabelVisitor : public Statement::Visitor
+{
+public:
+    SwitchLabelVisitor()
+    {
+    }
+    
+    //---------------------------------------------------------------------------
+    // Public API
+    //---------------------------------------------------------------------------
+    const std::vector<std::pair<const Expression::Base*, size_t>> getSwitchCaseJumps() const{ return m_SwitchCaseJumps; }
+    std::optional<size_t> getSwitchDefaultJump() const { return m_SwitchDefaultJump; }
+    
+    //---------------------------------------------------------------------------
+    // Statement::Visitor virtuals
+    //---------------------------------------------------------------------------
+    virtual void visit(const Statement::Break&) final
+    {
+    }
+
+    virtual void visit(const Statement::Compound &compound) final
+    {
+        const auto &statements = compound.getStatements();
+        for(m_CurrentStatementIdx = 0; (*m_CurrentStatementIdx) < statements.size(); (*m_CurrentStatementIdx)++) {
+            statements[*m_CurrentStatementIdx].get()->accept(*this);
+        }
+        m_CurrentStatementIdx.reset();
+    }
+
+    virtual void visit(const Statement::Continue&) final
+    {
+    }
+
+    virtual void visit(const Statement::Do &doStatement) final
+    {
+        doStatement.getBody()->accept(*this);
+    }
+
+    virtual void visit(const Statement::Expression&) final
+    {
+    }
+
+    virtual void visit(const Statement::For &forStatement) final
+    {
+        // Interpret initialiser if statement present
+        if(forStatement.getInitialiser()) {
+            forStatement.getInitialiser()->accept(*this);
+        }
+
+        forStatement.getBody()->accept(*this);
+    }
+
+    virtual void visit(const Statement::If &ifStatement) final
+    {
+        ifStatement.getThenBranch()->accept(*this);
+        ifStatement.getElseBranch()->accept(*this);
+    }
+
+    virtual void visit(const Statement::Labelled &labelled) final
+    {
+        // If label has a value i.e. it's a case not a default, add value expression and statement index to vector of labelled statements
+        if (labelled.getValue()) {
+            m_SwitchCaseJumps.emplace_back(labelled.getValue(), 
+                                           m_CurrentStatementIdx.value());
+        }
+        // Otherwise, add statement index to vector of labelled statements
+        else {
+            assert(!m_SwitchDefaultJump);
+            m_SwitchDefaultJump = m_CurrentStatementIdx.value();
+        }
+    }
+
+    virtual void visit(const Statement::Switch &switchStatement) final
+    {
+        // **TODO** handle nested switch
+        assert(false);
+    }
+
+    virtual void visit(const Statement::VarDeclaration&) final
+    {
+    }
+
+    virtual void visit(const Statement::While &whileStatement) final
+    {
+        whileStatement.getBody()->accept(*this);
+    }
+
+    virtual void visit(const Statement::Print&) final
+    {
+    }
+
+private:
+    //---------------------------------------------------------------------------
+    // Members
+    //---------------------------------------------------------------------------
+    std::optional<size_t> m_CurrentStatementIdx;
+    std::vector<std::pair<const Expression::Base*, size_t>> m_SwitchCaseJumps;
+    std::optional<size_t> m_SwitchDefaultJump;
 };
 
 //---------------------------------------------------------------------------
@@ -400,64 +504,47 @@ public:
 
     virtual void visit(const Statement::Labelled &labelled) final
     {
-        // If label has a value i.e. it's a case not a default, evaluate value and add to vector of labelled statements
-        if (labelled.getValue()) {
-            m_SwitchLabelledStatements.emplace_back(evaluate(labelled.getValue()), 
-                                                    labelled.getBody());
-        }
-        // Otherwise, add body to vector of labelled statements
-        else {
-            m_SwitchLabelledStatements.emplace_back(std::monostate(), labelled.getBody());
-        }
+        labelled.getBody()->accept(*this);
     }
 
     virtual void visit(const Statement::Switch &switchStatement) final
     {
-        // **TODO** handle nested switch statements
-        assert(m_SwitchLabelledStatements.empty());
+        // Cast body to compound statement
+        // **NOTE** this is a slight simplification of the C standard where any type of statement can be used as the body of the switch
+        const auto *compoundBody = dynamic_cast<const Statement::Compound*>(switchStatement.getBody());
+        assert(compoundBody);
 
-        // Visit switch statement body to find labelled statements
-        switchStatement.getBody()->accept(*this);
+        // Visit switch statement body using special visitor class to find labelled statements
+        SwitchLabelVisitor switchLabelVisitor;
+        compoundBody->accept(switchLabelVisitor);
 
         // Evaluate value
         auto value = evaluate(switchStatement.getCondition());
-
-        bool matched = false;
-        for (const auto &s : m_SwitchLabelledStatements) {
-            try {
-                // If we've already matched out value or this case matches it 
-                if (matched || value == s.first) {
-                    s.second->accept(*this);
-                    matched = true;
-                }
-            }
-            // Break if we encounter break exception and ignore continue exceptions
-            catch(Break&) {
-                break;
-            }
-        }
         
-        // If a case hasn't yet been found, look for default
-        if (!matched) {
-            for (const auto &s : m_SwitchLabelledStatements) {
+        // Search cases for jump that matches value
+        const auto &switchCaseJumps = switchLabelVisitor.getSwitchCaseJumps();
+        const auto jumpIter = std::find_if(switchCaseJumps.cbegin(), switchCaseJumps.cend(),
+                                          [value, this](const auto &jump)
+                                          {
+                                              return (evaluate(jump.first) == value);
+                                          });
+        
+        // If matching case was found, use this as jump destination, otherwise use default
+        const std::optional<size_t> jump = (jumpIter != switchCaseJumps.cend()) ? jumpIter->second : switchLabelVisitor.getSwitchDefaultJump();
+    
+        // If jump target was found
+        if(jump) {
+            // Loop through statements in body, starting from jump
+            for(size_t s = jump.value(); s < compoundBody->getStatements().size(); s++) {
                 try {
-                    // If we've already matched our value or this is a default
-                    if (matched || std::holds_alternative<std::monostate>(s.first)) {
-                        s.second->accept(*this);
-                        matched = true;
-                    }
+                    compoundBody->getStatements().at(s).get()->accept(*this);
                 }
                 // Break if we encounter break exception and ignore continue exceptions
                 catch(Break&) {
                     break;
                 }
             }
-            
         }
-
-        // Clear out labelled statements
-        // **THINK** exception safety
-        m_SwitchLabelledStatements.clear();
     }
 
     virtual void visit(const Statement::VarDeclaration &varDeclaration) final
@@ -513,7 +600,6 @@ private:
     // Members
     //---------------------------------------------------------------------------
     Environment::Value m_Value;
-    std::vector<std::pair<Token::LiteralValue, const Statement::Base*>> m_SwitchLabelledStatements;
     
     Environment *m_Environment;
 };
